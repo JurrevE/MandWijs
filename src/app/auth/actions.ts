@@ -5,9 +5,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { credentialsSchema, loginErrorMessage, signupErrorMessage } from "@/domain/auth";
+import { resolvePublicAppUrl } from "@/lib/public-app-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const authCallbackUrl = (next: string) => {
+  const url = new URL("/auth/callback", resolvePublicAppUrl());
+  url.searchParams.set("next", next);
+  return url.toString();
+};
 
 const messageUrl = (path: string, type: "error" | "message", message: string) =>
   `${path}?${type}=${encodeURIComponent(message)}`;
@@ -80,7 +85,7 @@ export async function signupAction(formData: FormData) {
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${appUrl}/auth/callback?next=/onboarding`,
+      emailRedirectTo: authCallbackUrl("/onboarding"),
       data: { name: parsed.data.name },
     },
   });
@@ -98,7 +103,7 @@ export async function requestPasswordResetAction(formData: FormData) {
   if (!parsed.success) redirect(messageUrl("/forgot-password", "error", "Vul een geldig e-mailadres in."));
   const supabase = await createSupabaseServerClient();
   if (supabase) {
-    await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${appUrl}/auth/callback?next=/update-password` });
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: authCallbackUrl("/update-password") });
   }
   redirect(messageUrl("/forgot-password", "message", "Als het account bestaat, ontvang je zo een e-mail."));
 }
@@ -128,7 +133,7 @@ export async function googleLoginAction() {
   }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${appUrl}/auth/callback?next=/onboarding` },
+    options: { redirectTo: authCallbackUrl("/onboarding") },
   });
   if (error || !data.url) redirect(messageUrl("/login", "error", "Google-inloggen kon niet worden gestart."));
   await clearDemoSession();

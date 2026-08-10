@@ -13,6 +13,9 @@ en bescherming tegen dubbel verzenden zijn geimplementeerd en getest.
 
 - [ ] Maak een Resend-account aan en verifieer een eigen afzenderdomein.
 - [ ] Maak in Resend een API-key aan voor MandWijs.
+- [ ] Koppel Resend ook als Custom SMTP-provider aan Supabase Auth. Zonder eigen
+      SMTP staat de ingebouwde Supabase-maildienst slechts enkele testmails toe
+      en is registratie niet geschikt voor productie.
 - [ ] Haal in Supabase een server-side Secret key (`sb_secret_...`) op. Gebruik
       alleen als alternatief de legacy `service_role` key.
 - [ ] Maak een willekeurige `CRON_SECRET` van minimaal 16 tekens.
@@ -91,4 +94,3 @@ en bescherming tegen dubbel verzenden zijn geimplementeerd en getest.
 - [ ] Maak handmatige productmatchcorrecties persistent.
 - [ ] Voeg voorraadindicatie en genormaliseerde prijzen per kg, liter of 100 gram toe.
 - [ ] Voeg telemetry, foutmonitoring en een privacy-/retentiepagina toe.
-

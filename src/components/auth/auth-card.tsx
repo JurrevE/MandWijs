@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
+import { LoginForm } from "@/components/auth/login-form";
 import { googleLoginAction, loginAction, requestPasswordResetAction, signupAction } from "@/app/auth/actions";
 
 type Mode = "login" | "register" | "forgot";
@@ -26,10 +27,10 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
           <h1 className="text-3xl font-black tracking-[-.045em] text-mandwijs-deep sm:text-4xl">{copy.title}</h1>
           <p className="mt-3 leading-7 text-mandwijs-muted">{copy.subtitle}</p>
 
-          {error && <p role="alert" className="mt-6 rounded-xl border border-[#f3cbd0] bg-[#fff0f1] px-4 py-3 text-sm font-semibold text-[#93343c]">{error}</p>}
+          {mode !== "login" && error && <p role="alert" className="mt-6 rounded-xl border border-[#f3cbd0] bg-[#fff0f1] px-4 py-3 text-sm font-semibold text-[#93343c]">{error}</p>}
           {message && <p className="mt-6 rounded-xl border border-[#c8e7da] bg-[#eaf7f1] px-4 py-3 text-sm font-semibold text-[#245f4e]">{message}</p>}
 
-          <form action={action} className="mt-7 space-y-4">
+          {mode === "login" ? <LoginForm initialError={error} /> : <form action={action} className="mt-7 space-y-4">
             {mode === "register" && (
               <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="name" autoComplete="name" className="input-field input-field-with-icon" placeholder="Bijvoorbeeld Sanne" /></span></label>
             )}
@@ -37,9 +38,8 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
             {mode !== "forgot" && (
               <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="input-field input-field-with-icon" placeholder="Minimaal 8 tekens" /></span></label>
             )}
-            {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-bold text-mandwijs-deep hover:underline">Wachtwoord vergeten?</Link></div>}
             <AuthSubmitButton label={copy.submit} pendingLabel={pendingLabel} />
-          </form>
+          </form>}
 
           {mode !== "forgot" && (
             <>

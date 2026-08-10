@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { credentialsSchema, loginErrorMessage } from "./auth";
+import { credentialsSchema, loginErrorMessage, signupErrorMessage } from "./auth";
 
 describe("inloggegevens", () => {
   it("normaliseert een e-mailadres zonder het wachtwoord aan te passen", () => {
@@ -20,12 +20,14 @@ describe("inloggegevens", () => {
 describe("inlogfouten", () => {
   it("maakt onderscheid tussen onjuiste gegevens en een onbevestigd account", () => {
     expect(loginErrorMessage({ code: "invalid_credentials", status: 400 })).toContain("wachtwoord");
+    expect(loginErrorMessage({ message: "Invalid login credentials", status: 400 })).toContain("wachtwoord");
     expect(loginErrorMessage({ code: "email_not_confirmed", status: 400 })).toContain("Bevestig");
   });
 
   it("herkent rate limiting op foutcode en status", () => {
     expect(loginErrorMessage({ code: "over_request_rate_limit", status: 400 })).toContain("Te veel");
     expect(loginErrorMessage({ status: 429 })).toContain("Te veel");
+    expect(signupErrorMessage({ message: "email rate limit exceeded", status: 422 })).toContain("bevestigingsmails");
   });
 
   it("lekt geen onbekende providerfout naar de gebruiker", () => {
@@ -34,4 +36,3 @@ describe("inlogfouten", () => {
     );
   });
 });
-

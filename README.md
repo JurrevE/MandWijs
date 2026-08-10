@@ -71,7 +71,7 @@ Prijslogica, matching, Haversine-afstand en optimalisatie zijn pure services. Da
 | Variabele | Waar | Doel |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | client/server | Supabase-project-URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client/server | publieke anon key, in combinatie met RLS |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client/server | `sb_publishable_...` of legacy `anon`; nooit `sb_secret_...`, in combinatie met RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | alleen server | Supabase Secret key (`sb_secret_...`) of legacy service-role voor cron/imports; nooit naar de browser |
 | `PRICE_PROVIDER` | server | `demo` of `prijsprofeet` |
 | `PRIJSPROFEET_API_KEY` | alleen server | optioneel voor zoeken, vereist voor gedocumenteerde Pro-endpoints |

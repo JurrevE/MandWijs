@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { credentialsSchema, loginErrorMessage } from "@/domain/auth";
+import { credentialsSchema, loginErrorMessage, signupErrorMessage } from "@/domain/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -84,7 +84,10 @@ export async function signupAction(formData: FormData) {
       data: { name: parsed.data.name },
     },
   });
-  if (error) redirect(messageUrl("/register", "error", error.message));
+  if (error) {
+    console.warn("Supabase registratie geweigerd", { code: error.code, status: error.status });
+    redirect(messageUrl("/register", "error", signupErrorMessage(error)));
+  }
   await clearDemoSession();
   if (data.session) redirect("/onboarding");
   redirect(messageUrl("/login", "message", "Controleer je inbox om je account te bevestigen."));

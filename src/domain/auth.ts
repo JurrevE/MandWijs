@@ -7,12 +7,30 @@ export const credentialsSchema = z.object({
 
 type AuthErrorLike = {
   code?: string;
+  message?: string;
   status?: number;
 };
 
+const isRateLimitError = (error: AuthErrorLike) =>
+  error.status === 429
+  || error.code === "over_request_rate_limit"
+  || error.code === "over_email_send_rate_limit"
+  || error.message?.toLowerCase().includes("rate limit") === true;
+
 export function loginErrorMessage(error: AuthErrorLike) {
-  if (error.status === 429 || error.code === "over_request_rate_limit") {
+  if (isRateLimitError(error)) {
     return "Te veel inlogpogingen. Wacht enkele minuten en probeer het daarna één keer opnieuw.";
+  }
+
+  const message = error.message?.toLowerCase() ?? "";
+  if (message.includes("invalid login credentials")) {
+    return "E-mailadres of wachtwoord klopt niet. Gebruik ‘Wachtwoord vergeten?’ als je twijfelt.";
+  }
+  if (message.includes("email not confirmed")) {
+    return "Bevestig eerst je e-mailadres via de link in je inbox.";
+  }
+  if (message.includes("failed to fetch") || message.includes("network")) {
+    return "Er kon geen verbinding met de inlogdienst worden gemaakt. Controleer je verbinding en probeer het opnieuw.";
   }
 
   switch (error.code) {
@@ -29,3 +47,19 @@ export function loginErrorMessage(error: AuthErrorLike) {
   }
 }
 
+export function signupErrorMessage(error: AuthErrorLike) {
+  if (isRateLimitError(error)) {
+    return "Er zijn te veel bevestigingsmails aangevraagd. Wacht even of probeer het later opnieuw.";
+  }
+
+  switch (error.code) {
+    case "user_already_exists":
+      return "Er bestaat al een account met dit e-mailadres. Probeer in te loggen.";
+    case "weak_password":
+      return "Kies een sterker wachtwoord van minimaal 8 tekens.";
+    case "email_address_invalid":
+      return "Dit e-mailadres kan niet worden gebruikt.";
+    default:
+      return "Het account kon tijdelijk niet worden aangemaakt. Probeer het later opnieuw.";
+  }
+}

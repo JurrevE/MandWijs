@@ -6,7 +6,7 @@ const protectedPrefixes = ["/dashboard", "/onboarding", "/producten", "/boodscha
 
 export async function proxy(request: NextRequest) {
   const isProtected = protectedPrefixes.some((path) => request.nextUrl.pathname.startsWith(path));
-  if (!isProtected || request.cookies.has("kopert_demo_session")) return NextResponse.next();
+  if (!isProtected || request.cookies.has("mandwijs_demo_session")) return NextResponse.next();
 
   let response = NextResponse.next({ request });
   let authenticated = false;

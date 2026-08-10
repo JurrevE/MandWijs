@@ -7,7 +7,7 @@ const styles = {
   deal: "bg-[#d9f5ea] text-[#145f47]",
   warning: "bg-[#fff0df] text-[#985012]",
   danger: "bg-[#ffe9eb] text-[#99333b]",
-  dark: "bg-kopert-deep text-white",
+  dark: "bg-mandwijs-deep text-white",
 } as const;
 
 export function Badge({

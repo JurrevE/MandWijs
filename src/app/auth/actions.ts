@@ -17,7 +17,7 @@ const messageUrl = (path: string, type: "error" | "message", message: string) =>
 
 async function setDemoSession(email: string) {
   const cookieStore = await cookies();
-  cookieStore.set("kopert_demo_session", email, {
+  cookieStore.set("mandwijs_demo_session", email, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -76,7 +76,7 @@ export async function requestPasswordResetAction(formData: FormData) {
 export async function googleLoginAction() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    await setDemoSession("demo@kopert.app");
+    await setDemoSession("demo@mandwijs.app");
     redirect("/dashboard");
   }
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -91,6 +91,6 @@ export async function logoutAction() {
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();
   const cookieStore = await cookies();
-  cookieStore.delete("kopert_demo_session");
+  cookieStore.delete("mandwijs_demo_session");
   redirect("/");
 }

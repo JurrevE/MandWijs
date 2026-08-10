@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL("/dashboard", request.url));
-  response.cookies.set("kopert_demo_session", "demo@kopert.app", {
+  response.cookies.set("mandwijs_demo_session", "demo@mandwijs.app", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

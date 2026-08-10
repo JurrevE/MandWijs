@@ -8,7 +8,7 @@ type Mode = "login" | "register" | "forgot";
 
 const content = {
   login: { title: "Fijn je weer te zien", subtitle: "Log in om je persoonlijke weekadvies te bekijken.", submit: "Inloggen" },
-  register: { title: "Begin met besparen", subtitle: "Maak in een minuut je persoonlijke Kopert-account.", submit: "Account maken" },
+  register: { title: "Begin met besparen", subtitle: "Maak in een minuut je persoonlijke MandWijs-account.", submit: "Account maken" },
   forgot: { title: "Wachtwoord vergeten?", subtitle: "We sturen je een veilige link om een nieuw wachtwoord te kiezen.", submit: "Stuur herstelmail" },
 };
 
@@ -21,37 +21,37 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
       <section className="flex min-h-screen flex-col px-5 py-6 sm:px-10 lg:px-14">
         <Logo />
         <div className="mx-auto my-auto w-full max-w-md py-14">
-          {mode === "forgot" && <Link href="/login" className="mb-7 inline-flex items-center gap-2 text-sm font-bold text-kopert-muted hover:text-kopert-text"><ArrowLeft className="size-4" /> Terug naar inloggen</Link>}
-          <h1 className="text-3xl font-black tracking-[-.045em] text-kopert-deep sm:text-4xl">{copy.title}</h1>
-          <p className="mt-3 leading-7 text-kopert-muted">{copy.subtitle}</p>
+          {mode === "forgot" && <Link href="/login" className="mb-7 inline-flex items-center gap-2 text-sm font-bold text-mandwijs-muted hover:text-mandwijs-text"><ArrowLeft className="size-4" /> Terug naar inloggen</Link>}
+          <h1 className="text-3xl font-black tracking-[-.045em] text-mandwijs-deep sm:text-4xl">{copy.title}</h1>
+          <p className="mt-3 leading-7 text-mandwijs-muted">{copy.subtitle}</p>
 
           {error && <p role="alert" className="mt-6 rounded-xl border border-[#f3cbd0] bg-[#fff0f1] px-4 py-3 text-sm font-semibold text-[#93343c]">{error}</p>}
           {message && <p className="mt-6 rounded-xl border border-[#c8e7da] bg-[#eaf7f1] px-4 py-3 text-sm font-semibold text-[#245f4e]">{message}</p>}
 
           <form action={action} className="mt-7 space-y-4">
             {mode === "register" && (
-              <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-kopert-muted" /><input required name="name" autoComplete="name" className="input-field pl-10" placeholder="Bijvoorbeeld Sanne" /></span></label>
+              <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="name" autoComplete="name" className="input-field pl-10" placeholder="Bijvoorbeeld Sanne" /></span></label>
             )}
-            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-kopert-muted" /><input required name="email" type="email" autoComplete="email" className="input-field pl-10" placeholder="jij@voorbeeld.nl" /></span></label>
+            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" className="input-field pl-10" placeholder="jij@voorbeeld.nl" /></span></label>
             {mode !== "forgot" && (
-              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-kopert-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} className="input-field pl-10" placeholder="Minimaal 8 tekens" /></span></label>
+              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} className="input-field pl-10" placeholder="Minimaal 8 tekens" /></span></label>
             )}
-            {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-bold text-kopert-deep hover:underline">Wachtwoord vergeten?</Link></div>}
+            {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-bold text-mandwijs-deep hover:underline">Wachtwoord vergeten?</Link></div>}
             <Button type="submit" className="min-h-13 w-full text-base">{copy.submit}</Button>
           </form>
 
           {mode !== "forgot" && (
             <>
-              <div className="my-6 flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-kopert-muted before:h-px before:flex-1 before:bg-kopert-line after:h-px after:flex-1 after:bg-kopert-line">of</div>
+              <div className="my-6 flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-mandwijs-muted before:h-px before:flex-1 before:bg-mandwijs-line after:h-px after:flex-1 after:bg-mandwijs-line">of</div>
               <form action={googleLoginAction}><Button type="submit" variant="secondary" className="min-h-13 w-full"><Chrome className="size-5" /> Doorgaan met Google</Button></form>
             </>
           )}
-          <p className="mt-7 text-center text-sm text-kopert-muted">
-            {mode === "login" ? <>Nog geen account? <Link href="/register" className="font-bold text-kopert-deep hover:underline">Gratis registreren</Link></> : mode === "register" ? <>Al een account? <Link href="/login" className="font-bold text-kopert-deep hover:underline">Inloggen</Link></> : "De link is 60 minuten geldig."}
+          <p className="mt-7 text-center text-sm text-mandwijs-muted">
+            {mode === "login" ? <>Nog geen account? <Link href="/register" className="font-bold text-mandwijs-deep hover:underline">Gratis registreren</Link></> : mode === "register" ? <>Al een account? <Link href="/login" className="font-bold text-mandwijs-deep hover:underline">Inloggen</Link></> : "De link is 60 minuten geldig."}
           </p>
         </div>
       </section>
-      <aside className="relative hidden overflow-hidden bg-kopert-deep p-14 text-white lg:flex lg:flex-col lg:justify-between">
+      <aside className="relative hidden overflow-hidden bg-mandwijs-deep p-14 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute -right-28 -top-28 size-96 rounded-full border-[70px] border-white/5" />
         <p className="relative max-w-sm text-sm leading-6 text-white/60">Persoonlijk prijsadvies voor normale prijzen én aanbiedingen, zonder onduidelijke actievoorwaarden.</p>
         <blockquote className="relative max-w-lg"><p className="text-3xl font-black leading-tight tracking-[-.04em]">“Ik zie in één oogopslag of een extra winkel de besparing waard is.”</p><footer className="mt-6 text-sm text-white/60">Demo-ervaring · Utrecht</footer></blockquote>

@@ -1,11 +1,11 @@
 export const siteConfig = {
-  name: "Kopert",
+  name: "MandWijs",
   description:
     "Jouw persoonlijke boodschappen, slim verdeeld over de voordeligste winkels.",
   defaultRadiusKm: 5,
   radiusOptionsKm: [1, 2, 5, 10, 25] as const,
   storePenaltyCents: Number(process.env.SHOPPING_STORE_PENALTY_CENTS ?? 300),
-  supportEmail: "hallo@kopert.app",
+  supportEmail: "hallo@mandwijs.app",
 } as const;
 
 export const formatEuro = (cents: number) =>

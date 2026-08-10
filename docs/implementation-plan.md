@@ -1,10 +1,10 @@
-# Kopert — implementatieplan
+# MandWijs — implementatieplan
 
 ## Uitgangssituatie
 
 - De GitHub-repository was bij aanvang leeg en bevatte geen commits.
 - De applicatie wordt mobile-first gebouwd met Next.js App Router, TypeScript en Tailwind CSS.
-- Zonder externe credentials draait Kopert volledig met deterministische demo-data.
+- Zonder externe credentials draait MandWijs volledig met deterministische demo-data.
 - Supabase, Resend en de externe prijsprovider worden via server-only environment variables aangesloten.
 
 ## Fasering

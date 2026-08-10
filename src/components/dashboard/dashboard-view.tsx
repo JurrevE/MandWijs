@@ -61,13 +61,13 @@ export function DashboardView() {
           { icon: MailCheck, label: "Maandagmail", value: profile.emailPreference === "none" ? "Uitgeschakeld" : "Ingeschakeld", detail: profile.emailPreference === "full" ? "volledige lijst" : "korte samenvatting" },
         ].map(({ icon: Icon, label, value, detail }) => (
           <Card key={label} className="flex items-start gap-4 p-5 shadow-none">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ee] text-kopert-deep"><Icon className="size-5" /></span>
-            <span><span className="block text-xs font-bold text-kopert-muted">{label}</span><strong className="mt-1 block text-lg tracking-[-.02em]">{value}</strong><span className="mt-0.5 block text-xs text-kopert-muted">{detail}</span></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ee] text-mandwijs-deep"><Icon className="size-5" /></span>
+            <span><span className="block text-xs font-bold text-mandwijs-muted">{label}</span><strong className="mt-1 block text-lg tracking-[-.02em]">{value}</strong><span className="mt-0.5 block text-xs text-mandwijs-muted">{detail}</span></span>
           </Card>
         ))}
       </div>
 
-      <Card className="mb-7 overflow-hidden border-0 bg-kopert-deep text-white shadow-[0_20px_55px_rgba(23,61,50,.18)]">
+      <Card className="mb-7 overflow-hidden border-0 bg-mandwijs-deep text-white shadow-[0_20px_55px_rgba(23,61,50,.18)]">
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[.8fr_1.2fr] lg:p-10">
           <div>
             <Badge tone="deal"><CheckCircle2 className="mr-1 size-3" /> Aanbevolen</Badge>
@@ -99,18 +99,18 @@ export function DashboardView() {
       </Card>
 
       <section className="mb-7">
-        <div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-black tracking-[-.03em]">Vergelijk strategieën</h2><p className="mt-1 text-sm text-kopert-muted">Wat past deze week bij je tijd en budget?</p></div><Link href="/boodschappenlijst" className="hidden text-sm font-bold text-kopert-deep hover:underline sm:block">Details bekijken</Link></div>
+        <div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-black tracking-[-.03em]">Vergelijk strategieën</h2><p className="mt-1 text-sm text-mandwijs-muted">Wat past deze week bij je tijd en budget?</p></div><Link href="/boodschappenlijst" className="hidden text-sm font-bold text-mandwijs-deep hover:underline sm:block">Details bekijken</Link></div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => (
-            <Card key={plan.id} className={`p-5 shadow-none ${plan.id === "balance" ? "border-kopert-primary ring-2 ring-kopert-primary/10" : ""}`}>
+            <Card key={plan.id} className={`p-5 shadow-none ${plan.id === "balance" ? "border-mandwijs-primary ring-2 ring-mandwijs-primary/10" : ""}`}>
               <div className="flex items-start justify-between gap-2">
-                <span className="grid size-10 place-items-center rounded-xl bg-[#edf5f2] text-kopert-deep">{plan.id === "fewest" ? <MapPinned className="size-5" /> : plan.id === "balance" ? <Route className="size-5" /> : <TrendingDown className="size-5" />}</span>
+                <span className="grid size-10 place-items-center rounded-xl bg-[#edf5f2] text-mandwijs-deep">{plan.id === "fewest" ? <MapPinned className="size-5" /> : plan.id === "balance" ? <Route className="size-5" /> : <TrendingDown className="size-5" />}</span>
                 {plan.id === "cheapest" && <Badge tone="deal">Beste prijs</Badge>}
                 {plan.id === "balance" && <Badge tone="dark">Aanbevolen</Badge>}
               </div>
               <h3 className="mt-5 text-sm font-extrabold">{plan.label}</h3>
               <p className="mt-2 text-2xl font-black tracking-[-.04em]">{formatEuro(plan.totalCents)}</p>
-              <p className="mt-1 text-xs text-kopert-muted">{plan.storeCount} {plan.storeCount === 1 ? "winkel" : "winkels"} · {plan.options.length} matches</p>
+              <p className="mt-1 text-xs text-mandwijs-muted">{plan.storeCount} {plan.storeCount === 1 ? "winkel" : "winkels"} · {plan.options.length} matches</p>
             </Card>
           ))}
         </div>
@@ -118,15 +118,15 @@ export function DashboardView() {
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
         <Card className="p-5 shadow-none sm:p-6">
-          <div className="flex items-center justify-between"><div><h2 className="text-lg font-black">Nu voordelig</h2><p className="mt-1 text-xs text-kopert-muted">Aanbiedingen voor producten op jouw lijst</p></div><ButtonLink href="/aanbiedingen" variant="ghost" className="px-2">Alles <ArrowRight className="size-4" /></ButtonLink></div>
-          <div className="mt-4 divide-y divide-kopert-line">
+          <div className="flex items-center justify-between"><div><h2 className="text-lg font-black">Nu voordelig</h2><p className="mt-1 text-xs text-mandwijs-muted">Aanbiedingen voor producten op jouw lijst</p></div><ButtonLink href="/aanbiedingen" variant="ghost" className="px-2">Alles <ArrowRight className="size-4" /></ButtonLink></div>
+          <div className="mt-4 divide-y divide-mandwijs-line">
             {activeDeals.slice(0, 4).map((offer) => {
               const chain = demoChains.find((item) => item.id === offer.chainId)!;
               return <Link href="/aanbiedingen" key={offer.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span>
-                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{offer.product.name}</strong><span className="mt-0.5 block text-xs text-kopert-muted">{chain.name} · {actionLabels[offer.actionType]}</span></span>
-                <span className="text-right"><strong className="block text-sm">{formatEuro(offer.effectiveUnitPriceCents)}</strong><span className="text-[.68rem] text-kopert-muted">per stuk</span></span>
-                <ChevronRight className="size-4 text-kopert-muted" />
+                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{offer.product.name}</strong><span className="mt-0.5 block text-xs text-mandwijs-muted">{chain.name} · {actionLabels[offer.actionType]}</span></span>
+                <span className="text-right"><strong className="block text-sm">{formatEuro(offer.effectiveUnitPriceCents)}</strong><span className="text-[.68rem] text-mandwijs-muted">per stuk</span></span>
+                <ChevronRight className="size-4 text-mandwijs-muted" />
               </Link>;
             })}
           </div>
@@ -135,9 +135,9 @@ export function DashboardView() {
         <Card className="p-5 shadow-none sm:p-6">
           <h2 className="text-lg font-black">Datastatus</h2>
           <div className="mt-5 space-y-4">
-            <div className="flex gap-3"><Clock3 className="mt-0.5 size-5 text-kopert-primary" /><span><strong className="block text-sm">Bijgewerkt vandaag om 08:15</strong><span className="text-xs text-kopert-muted">18 demo-aanbiedingen verwerkt</span></span></div>
-            <div className="flex gap-3"><CalendarDays className="mt-0.5 size-5 text-kopert-primary" /><span><strong className="block text-sm">Geldig t/m zondag 16 augustus</strong><span className="text-xs text-kopert-muted">Volgende automatische controle: morgen</span></span></div>
-            <div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-[#b9691e]" /><span><strong className="block text-sm">Demo-provider actief</strong><span className="text-xs leading-5 text-kopert-muted">Prijzen zijn voorbeelddata en geen actuele winkelclaim.</span></span></div>
+            <div className="flex gap-3"><Clock3 className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Bijgewerkt vandaag om 08:15</strong><span className="text-xs text-mandwijs-muted">18 demo-aanbiedingen verwerkt</span></span></div>
+            <div className="flex gap-3"><CalendarDays className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Geldig t/m zondag 16 augustus</strong><span className="text-xs text-mandwijs-muted">Volgende automatische controle: morgen</span></span></div>
+            <div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-[#b9691e]" /><span><strong className="block text-sm">Demo-provider actief</strong><span className="text-xs leading-5 text-mandwijs-muted">Prijzen zijn voorbeelddata en geen actuele winkelclaim.</span></span></div>
           </div>
         </Card>
       </div>

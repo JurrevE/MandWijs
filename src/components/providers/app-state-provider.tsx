@@ -52,7 +52,7 @@ const initialState: PersistedState = {
 };
 
 const AppStateContext = createContext<AppStateValue | null>(null);
-const storageKey = "kopert-demo-state-v1";
+const storageKey = "mandwijs-demo-state-v1";
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(initialState);

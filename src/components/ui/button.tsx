@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 
 const variants = {
   primary:
-    "bg-kopert-deep text-white shadow-[0_8px_25px_rgba(23,61,50,.18)] hover:bg-[#204f42]",
-  secondary: "border border-kopert-line bg-white text-kopert-text hover:bg-[#f1f7f4]",
-  soft: "bg-[#e9f5f0] text-kopert-deep hover:bg-[#dcefe7]",
-  ghost: "text-kopert-muted hover:bg-[#edf4f1] hover:text-kopert-text",
+    "bg-mandwijs-deep text-white shadow-[0_8px_25px_rgba(23,61,50,.18)] hover:bg-[#204f42]",
+  secondary: "border border-mandwijs-line bg-white text-mandwijs-text hover:bg-[#f1f7f4]",
+  soft: "bg-[#e9f5f0] text-mandwijs-deep hover:bg-[#dcefe7]",
+  ghost: "text-mandwijs-muted hover:bg-[#edf4f1] hover:text-mandwijs-text",
   danger: "bg-[#fff0f1] text-[#9f3039] hover:bg-[#ffe5e7]",
 } as const;
 

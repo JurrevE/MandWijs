@@ -1,4 +1,4 @@
--- Kopert production schema — run with `supabase db reset` locally or `supabase db push` remotely.
+-- MandWijs production schema — run with `supabase db reset` locally or `supabase db push` remotely.
 create extension if not exists pgcrypto;
 
 create type public.app_role as enum ('user', 'admin');

@@ -15,15 +15,15 @@
 }
 
 @theme inline {
-  --color-kopert-text: var(--text);
-  --color-kopert-bg: var(--background);
-  --color-kopert-primary: var(--primary);
-  --color-kopert-secondary: var(--secondary);
-  --color-kopert-accent: var(--accent);
-  --color-kopert-surface: var(--surface);
-  --color-kopert-muted: var(--muted);
-  --color-kopert-line: var(--line);
-  --color-kopert-deep: var(--deep);
+  --color-mandwijs-text: var(--text);
+  --color-mandwijs-bg: var(--background);
+  --color-mandwijs-primary: var(--primary);
+  --color-mandwijs-secondary: var(--secondary);
+  --color-mandwijs-accent: var(--accent);
+  --color-mandwijs-surface: var(--surface);
+  --color-mandwijs-muted: var(--muted);
+  --color-mandwijs-line: var(--line);
+  --color-mandwijs-deep: var(--deep);
   --font-sans: "Inter", "Aptos", "Segoe UI", system-ui, sans-serif;
 }
 

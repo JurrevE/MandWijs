@@ -1,6 +1,6 @@
-# Kopert
+# MandWijs
 
-Kopert is een mobile-first webapp voor Nederlandse consumenten die hun persoonlijke boodschappenlijst willen vergelijken op normale prijzen, aanbiedingen en het gewenste aantal winkelstops.
+MandWijs is een mobile-first webapp voor Nederlandse consumenten die hun persoonlijke boodschappenlijst willen vergelijken op normale prijzen, aanbiedingen en het gewenste aantal winkelstops.
 
 De MVP is direct bruikbaar met transparante demo-data. Supabase, een externe prijsprovider en Resend zijn optionele productie-aansluitingen; ontbrekende credentials laten de app niet crashen.
 
@@ -30,7 +30,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. Klik op **Bekijk de demo**, of registreer met een willekeurig geldig e-mailadres en een wachtwoord van minimaal acht tekens. Zolang Supabase niet is geconfigureerd gebruikt Kopert een HTTP-only demo-sessie en localStorage voor niet-gevoelige demovoorkeuren.
+Open `http://localhost:3000`. Klik op **Bekijk de demo**, of registreer met een willekeurig geldig e-mailadres en een wachtwoord van minimaal acht tekens. Zolang Supabase niet is geconfigureerd gebruikt MandWijs een HTTP-only demo-sessie en localStorage voor niet-gevoelige demovoorkeuren.
 
 ## Commands
 

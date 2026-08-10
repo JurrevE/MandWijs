@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 flex h-[4.5rem] items-center justify-between border-b border-mandwijs-line bg-white/90 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-mandwijs-line bg-white/90 px-4 backdrop-blur-xl sm:h-[4.5rem] sm:px-8 lg:px-10">
           <Logo href="/dashboard" className="lg:hidden" />
           <div className="hidden items-center gap-2 text-sm text-mandwijs-muted sm:flex">
             <MapPin className="size-4 text-mandwijs-primary" />
@@ -189,10 +189,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <AccountMenu name={profile.name} email={userEmail} mode={mode} />
         </header>
-        <main className="mx-auto max-w-[95rem] px-4 pb-28 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">{children}</main>
+        <main className="mx-auto max-w-[95rem] px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">{children}</main>
       </div>
 
-      <nav aria-label="Mobiele navigatie" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-mandwijs-line bg-white/95 px-2 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
+      <nav aria-label="Mobiele navigatie" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-mandwijs-line bg-white/95 px-1 pt-0.5 pb-[max(.4rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_rgba(23,61,50,.08)] backdrop-blur-xl lg:hidden">
         {navigation.slice(0, 4).map((item) => <NavLink key={item.href} item={item} mobile />)}
         <NavLink item={{ href: "/instellingen", label: "Meer", icon: Settings }} mobile />
       </nav>

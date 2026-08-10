@@ -50,31 +50,35 @@ export function DashboardView() {
         actions={<ButtonLink href="/producten" variant="secondary"><ListPlus className="size-4" /> Product toevoegen</ButtonLink>}
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:mb-5 sm:gap-3 xl:grid-cols-4">
         {[
           { icon: ListPlus, label: "Op je lijst", value: `${activeItems.length} producten`, detail: `${list.filter((item) => item.checked).length} afgevinkt` },
           { icon: TrendingDown, label: "Laagste schatting", value: formatEuro(plans[0]?.totalCents ?? 0), detail: `tot ${formatEuro(plans[0]?.savingsCents ?? 0)} verschil` },
           { icon: Store, label: hasPreciseLocation ? "Winkels in je buurt" : "Prijsdekking", value: `${relevantStores} in beeld`, detail: hasPreciseLocation ? `binnen ${profile.radiusKm} km` : "landelijke ketenprijzen" },
           { icon: MailCheck, label: "Maandagmail", value: profile.emailPreference === "none" ? "Uitgeschakeld" : "Ingeschakeld", detail: profile.emailPreference === "full" ? "volledige lijst" : "korte samenvatting" },
         ].map(({ icon: Icon, label, value, detail }) => (
-          <Card key={label} className="flex items-start gap-4 p-5 shadow-none">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e7f3ee] text-mandwijs-deep"><Icon className="size-5" /></span>
-            <span><span className="block text-xs font-bold text-mandwijs-muted">{label}</span><strong className="mt-1 block text-lg tracking-[-.02em]">{value}</strong><span className="mt-0.5 block text-xs text-mandwijs-muted">{detail}</span></span>
+          <Card key={label} className="flex min-w-0 flex-col gap-3 rounded-2xl p-3.5 shadow-none sm:flex-row sm:items-start sm:gap-4 sm:rounded-[1.25rem] sm:p-5">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e7f3ee] text-mandwijs-deep sm:size-10"><Icon className="size-[1.1rem] sm:size-5" /></span>
+            <span className="min-w-0">
+              <span className="block text-[.68rem] font-bold leading-4 text-mandwijs-muted sm:text-xs">{label}</span>
+              <strong className="mt-0.5 block text-base leading-5 tracking-[-.02em] sm:mt-1 sm:text-lg">{value}</strong>
+              <span className="mt-1 block text-[.68rem] leading-4 text-mandwijs-muted sm:mt-0.5 sm:text-xs">{detail}</span>
+            </span>
           </Card>
         ))}
       </div>
 
       <Card className="mb-7 overflow-hidden border-0 bg-mandwijs-deep text-white shadow-[0_20px_55px_rgba(23,61,50,.18)]">
-        <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[.8fr_1.2fr] lg:p-10">
+        <div className="grid gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-[.8fr_1.2fr] lg:p-10">
           <div>
             <Badge tone="deal"><CheckCircle2 className="mr-1 size-3" /> Aanbevolen</Badge>
-            <h2 className="mt-4 text-2xl font-black tracking-[-.04em] sm:text-3xl">Beste balans voor jouw week</h2>
-            <p className="mt-3 max-w-md text-sm leading-6 text-white/65">{balance.description} De € 3,00 penalty is een voorkeursscore, geen echte reiskostenberekening.</p>
-            <div className="mt-7 flex items-end gap-6">
-              <span><small className="block text-xs font-bold text-white/50">GESCHAT TOTAAL</small><strong className="mt-1 block text-4xl font-black tracking-[-.05em]">{formatEuro(balance.totalCents)}</strong></span>
+            <h2 className="mt-3 text-2xl font-black leading-tight tracking-[-.04em] sm:mt-4 sm:text-3xl">Beste balans voor jouw week</h2>
+            <p className="mt-2 max-w-md text-sm leading-5 text-white/65 sm:mt-3 sm:leading-6">{balance.description}<span className="hidden sm:inline"> De € 3,00 penalty is een voorkeursscore, geen echte reiskostenberekening.</span></p>
+            <div className="mt-5 flex items-end gap-5 sm:mt-7 sm:gap-6">
+              <span><small className="block text-[.68rem] font-bold text-white/50 sm:text-xs">GESCHAT TOTAAL</small><strong className="mt-1 block text-3xl font-black tracking-[-.05em] sm:text-4xl">{formatEuro(balance.totalCents)}</strong></span>
               <span className="mb-1 border-l border-white/15 pl-6"><small className="block text-xs text-white/50">Winkels</small><strong className="text-xl">{balance.storeCount}</strong></span>
             </div>
-            <ButtonLink href="/boodschappenlijst" variant="soft" className="mt-7">Bekijk volledig winkelplan <ArrowRight className="size-4" /></ButtonLink>
+            <ButtonLink href="/boodschappenlijst" variant="soft" className="mt-5 w-full sm:mt-7 sm:w-auto">Bekijk volledig winkelplan <ArrowRight className="size-4" /></ButtonLink>
           </div>
           <div className="grid content-center gap-3">
             {[...new Set(balance.options.map((option) => option.storeId))].map((storeId, index) => {

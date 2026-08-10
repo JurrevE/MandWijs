@@ -57,7 +57,7 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
       <aside className="relative hidden overflow-hidden bg-mandwijs-deep p-14 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute -right-28 -top-28 size-96 rounded-full border-[70px] border-white/5" />
         <p className="relative max-w-sm text-sm leading-6 text-white/60">Persoonlijk prijsadvies voor normale prijzen én aanbiedingen, zonder onduidelijke actievoorwaarden.</p>
-        <blockquote className="relative max-w-lg"><p className="text-3xl font-black leading-tight tracking-[-.04em]">“Ik zie in één oogopslag of een extra winkel de besparing waard is.”</p><footer className="mt-6 text-sm text-white/60">Demo-ervaring · Utrecht</footer></blockquote>
+        <div className="relative max-w-lg"><p className="text-3xl font-black leading-tight tracking-[-.04em]">Van boodschappenlijst naar slim winkelplan — zonder zelf alle aanbiedingen uit te zoeken.</p><p className="mt-6 text-sm text-white/60">MandWijs · Persoonlijk prijsadvies</p></div>
       </aside>
     </main>
   );

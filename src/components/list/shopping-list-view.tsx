@@ -11,7 +11,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { optimizeShopping, type Strategy } from "@/domain/optimizer";
 import { formatEuro } from "@/config/site";
-import { localizeShoppingOptions } from "@/domain/market-data";
+import { prepareShoppingOptionsForList } from "@/domain/market-data";
 
 const strategyLabels: Record<Strategy, string> = {
   cheapest: "Beste prijs",
@@ -26,19 +26,14 @@ export function ShoppingListView() {
   const activeItems = list.filter((item) => !item.checked);
   const checkedItems = list.filter((item) => item.checked);
 
-  const adjustedOptions = useMemo(() => localizeShoppingOptions(shoppingOptions, stores, profile, profile.disabledStoreIds)
-    .filter((option) => activeItems.some((item) => item.productId === option.productId))
-    .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
-    .map((option) => {
-      const requested = activeItems.find((item) => item.productId === option.productId)?.quantity ?? 1;
-      return { ...option, requestedQuantity: requested, priceCents: option.priceCents * Math.ceil(requested / option.payableQuantity) };
-    }), [activeItems, profile, stores, shoppingOptions]);
+  const adjustedOptions = useMemo(() => prepareShoppingOptionsForList(shoppingOptions, activeItems, stores, profile), [activeItems, profile, stores, shoppingOptions]);
 
   const plan = optimizeShopping({
     productIds: activeItems.map((item) => item.productId),
     options: adjustedOptions,
     strategy,
     storePenaltyCents: 300,
+    maxStores: profile.maxStores ?? undefined,
   });
   const storeIds = [...new Set(plan.options.map((option) => option.storeId))];
 

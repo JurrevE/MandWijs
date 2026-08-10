@@ -1,7 +1,7 @@
 import { actionLabels } from "./pricing";
 import { haversineDistanceKm, isWithinRadius } from "./distance";
 import { matchProduct } from "./matching";
-import type { AppProfile } from "./app-state";
+import type { AppProfile, GroceryListItem } from "./app-state";
 import type { Offer, PersonalProduct, ProductMatch, ShoppingOption, StoreLocation, SupermarketChain } from "./types";
 
 export function addNationalPriceLocations(chains: SupermarketChain[], stores: StoreLocation[]) {
@@ -105,6 +105,31 @@ export function localizeShoppingOptions(
     const store = nearestStoreByChain.get(option.chainId);
     return store ? [{ ...option, id: `${option.id}:${store.id}`, storeId: store.id, storeName: store.name }] : [];
   });
+}
+
+export function prepareShoppingOptionsForList(
+  options: ShoppingOption[],
+  items: GroceryListItem[],
+  stores: StoreLocation[],
+  profile: Pick<AppProfile, "latitude" | "longitude" | "radiusKm" | "enabledChainIds" | "disabledStoreIds">,
+) {
+  const activeItems = items.filter((item) => !item.checked);
+  const prepared = localizeShoppingOptions(options, stores, profile, profile.disabledStoreIds)
+    .filter((option) => activeItems.some((item) => item.productId === option.productId))
+    .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
+    .map((option) => {
+      const requested = activeItems.find((item) => item.productId === option.productId)?.quantity ?? 1;
+      const bundles = Math.ceil(requested / option.payableQuantity);
+      return { ...option, requestedQuantity: requested, priceCents: option.priceCents * bundles };
+    });
+
+  const cheapestPerProductAndStore = new Map<string, ShoppingOption>();
+  for (const option of prepared) {
+    const key = `${option.productId}\u0000${option.storeId}`;
+    const existing = cheapestPerProductAndStore.get(key);
+    if (!existing || option.priceCents < existing.priceCents) cheapestPerProductAndStore.set(key, option);
+  }
+  return [...cheapestPerProductAndStore.values()];
 }
 
 function isCloser(candidate: StoreLocation, current: StoreLocation, origin: { latitude: number; longitude: number }) {

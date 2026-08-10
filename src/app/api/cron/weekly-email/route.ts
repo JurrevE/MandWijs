@@ -1,47 +1,52 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse, type NextRequest } from "next/server";
-import { renderWeeklyEmail } from "@/emails/weekly-email";
-import { weeklyEmailKey } from "@/domain/email";
-import type { ShoppingPlan } from "@/domain/types";
+import { z } from "zod";
+import { runWeeklyEmailJob } from "@/lib/email/weekly-email-job";
+import { ResendEmailClient } from "@/lib/email/resend-client";
+import type { Database } from "@/lib/supabase/database.types";
+import { getSupermarketDataProvider } from "@/providers";
+import { OpenStreetMapLocationProvider } from "@/providers/openstreetmap-location-provider";
 
-const isoWeek = (date = new Date()) => {
-  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return `${target.getUTCFullYear()}-W${String(Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)).padStart(2, "0")}`;
-};
+const querySchema = z.object({
+  dryRun: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
+  userId: z.uuid().optional(),
+});
 
-async function handler(request: NextRequest) {
+async function handler(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!url || !serviceKey || !resendKey) return NextResponse.json({ error: "Supabase service role of Resend is niet geconfigureerd" }, { status: 503 });
-
-  // De echte optimizerinput komt uit de database. Zonder live brondata wordt bewust niets verzonden.
-  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: profiles, error } = await supabase.from("profiles").select("id, display_name, email_preference").neq("email_preference", "none");
-  if (error) return NextResponse.json({ error: "Profielen konden niet worden gelezen" }, { status: 500 });
-  let sent = 0;
-  let skipped = 0;
-  const week = isoWeek();
-
-  for (const profile of profiles ?? []) {
-    const key = weeklyEmailKey(profile.id, week);
-    const { data: existing } = await supabase.from("weekly_email_deliveries").select("id").eq("idempotency_key", key).maybeSingle();
-    if (existing) { skipped += 1; continue; }
-    const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-    if (!authUser.user?.email) { skipped += 1; continue; }
-    const emptyPlan: ShoppingPlan = { id: "balance", label: "Beste balans", description: "", totalCents: 0, scoreCents: 0, storeCount: 0, savingsCents: 0, options: [], unmatchedProductIds: [] };
-    const email = renderWeeklyEmail({ name: profile.display_name ?? "daar", preference: profile.email_preference, plan: emptyPlan, validFrom: "deze week", validUntil: "zondag", dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`, unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/instellingen` });
-    const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL, to: authUser.user.email, subject: email.subject, html: email.html }) });
-    if (!response.ok) continue;
-    await supabase.from("weekly_email_deliveries").insert({ user_id: profile.id, week_key: week, idempotency_key: key, sent_at: new Date().toISOString() });
-    sent += 1;
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return Response.json({ error: "Niet geautoriseerd." }, { status: 401 });
   }
-  return NextResponse.json({ sent, skipped, week });
+  const parsedQuery = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
+  if (!parsedQuery.success) return Response.json({ error: "Ongeldige cronparameters." }, { status: 400 });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!supabaseUrl || !serviceKey || !appUrl) {
+    return Response.json({ error: "Supabase service role of de publieke app-URL is niet geconfigureerd." }, { status: 503 });
+  }
+
+  const emailSender = new ResendEmailClient();
+  if (!parsedQuery.data.dryRun && !emailSender.isConfigured()) {
+    return Response.json({ error: "Resend is niet geconfigureerd." }, { status: 503 });
+  }
+
+  const supabase = createClient<Database>(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  try {
+    const result = await runWeeklyEmailJob({
+      supabase,
+      provider: getSupermarketDataProvider(),
+      locationProvider: new OpenStreetMapLocationProvider(),
+      emailSender: parsedQuery.data.dryRun ? undefined : emailSender,
+      appUrl,
+      dryRun: parsedQuery.data.dryRun,
+      userId: parsedQuery.data.userId,
+      storePenaltyCents: z.coerce.number().int().nonnegative().catch(300).parse(process.env.SHOPPING_STORE_PENALTY_CENTS),
+    });
+    return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "De maandagmailtaak is mislukt." }, { status: 500 });
+  }
 }
 
 export const GET = handler;

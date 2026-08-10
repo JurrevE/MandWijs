@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canAccessUserResource, canManageGlobalData } from "./authorization";
-import { shouldSendWeeklyEmail, weeklyEmailKey } from "./email";
+import { currentWeekRange, isoWeek, shouldSendWeeklyEmail, weeklyEmailKey } from "./email";
 
 describe("gebruikersautorisatie", () => {
   it("laat een gebruiker alleen de eigen resource lezen", () => {
@@ -24,5 +24,14 @@ describe("e-mailvoorkeuren", () => {
 
   it("maakt een stabiele idempotentiesleutel per week", () => {
     expect(weeklyEmailKey("user-a", "2026-W33")).toBe(weeklyEmailKey("user-a", "2026-W33"));
+  });
+
+  it("berekent de ISO-week en Nederlandse maandag-zondagperiode", () => {
+    const date = new Date("2026-08-10T07:00:00.000Z");
+    expect(isoWeek(date)).toBe("2026-W33");
+    expect(currentWeekRange(date)).toEqual({
+      validFrom: "maandag 10 augustus 2026",
+      validUntil: "zondag 16 augustus 2026",
+    });
   });
 });

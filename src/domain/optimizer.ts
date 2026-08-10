@@ -17,11 +17,37 @@ const strategyMeta: Record<Strategy, { label: string; description: string }> = {
   balance: { label: "Beste balans", description: "Prijs plus € 3,00 voorkeurspenalty per extra winkel." },
 };
 
-function cartesian<T>(groups: T[][]): T[][] {
-  return groups.reduce<T[][]>(
-    (combinations, group) => combinations.flatMap((combination) => group.map((item) => [...combination, item])),
-    [[]],
-  );
+interface Candidate {
+  options: ShoppingOption[];
+  storeIds: Set<string>;
+  totalCents: number;
+}
+
+function buildCandidates(groups: ShoppingOption[][], storeLimit?: number) {
+  let candidates: Candidate[] = [{ options: [], storeIds: new Set(), totalCents: 0 }];
+
+  for (const group of groups) {
+    const next = new Map<string, Candidate>();
+    for (const candidate of candidates) {
+      for (const option of group) {
+        const storeIds = new Set(candidate.storeIds).add(option.storeId);
+        if (storeLimit && storeIds.size > storeLimit) continue;
+        const expanded: Candidate = {
+          options: [...candidate.options, option],
+          storeIds,
+          totalCents: candidate.totalCents + option.priceCents,
+        };
+        const key = [...storeIds].sort().join("\u0000");
+        const existing = next.get(key);
+        // Voor dezelfde winkelcombinatie domineert het goedkoopste deelplan alle
+        // duurdere varianten, ongeacht de gekozen eindstrategie.
+        if (!existing || expanded.totalCents < existing.totalCents) next.set(key, expanded);
+      }
+    }
+    candidates = [...next.values()];
+  }
+
+  return candidates;
 }
 
 export function optimizeShopping(input: OptimizeInput): ShoppingPlan {
@@ -33,20 +59,17 @@ export function optimizeShopping(input: OptimizeInput): ShoppingPlan {
   const optionGroups = matchedProductIds.map((productId) =>
     input.options.filter((option) => option.productId === productId),
   );
-  const combinations = cartesian(optionGroups).filter((combination) => {
-    const stores = new Set(combination.map((option) => option.storeId)).size;
-    const strategyLimit = input.strategy === "max_two" ? 2 : input.maxStores;
-    return !strategyLimit || stores <= strategyLimit;
-  });
+  const strategyLimit = input.strategy === "max_two" ? 2 : input.maxStores;
+  const combinations = buildCandidates(optionGroups, strategyLimit);
 
   if (combinations.length === 0) {
     const meta = strategyMeta[input.strategy];
     return { id: input.strategy, ...meta, totalCents: 0, scoreCents: 0, storeCount: 0, savingsCents: 0, options: [], unmatchedProductIds: input.productIds };
   }
 
-  const ranked = combinations.map((options) => {
-    const totalCents = options.reduce((sum, option) => sum + option.priceCents, 0);
-    const storeCount = new Set(options.map((option) => option.storeId)).size;
+  const ranked = combinations.map((candidate) => {
+    const { options, totalCents } = candidate;
+    const storeCount = candidate.storeIds.size;
     const scoreCents = totalCents + Math.max(0, storeCount - 1) * penalty;
     return { options, totalCents, storeCount, scoreCents };
   });

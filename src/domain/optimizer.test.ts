@@ -51,4 +51,20 @@ describe("optimizeShopping", () => {
     expect(plan.storeCount).toBe(1);
     expect(plan.scoreCents).toBe(385);
   });
+
+  it("schaalt naar een grotere weeklijst zonder alle productcombinaties uit te schrijven", () => {
+    const productIds = Array.from({ length: 30 }, (_, index) => `product-${index}`);
+    const manyOptions = productIds.flatMap((productId, productIndex) =>
+      Array.from({ length: 10 }, (_, storeIndex) => option(
+        `${productId}-${storeIndex}`,
+        productId,
+        `store-${storeIndex}`,
+        100 + productIndex + storeIndex,
+      )),
+    );
+
+    const plan = optimizeShopping({ productIds, options: manyOptions, strategy: "balance", storePenaltyCents: 300, maxStores: 3 });
+    expect(plan.options).toHaveLength(30);
+    expect(plan.storeCount).toBe(1);
+  });
 });

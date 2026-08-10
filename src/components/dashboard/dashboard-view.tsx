@@ -24,7 +24,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { optimizeShopping, type Strategy } from "@/domain/optimizer";
 import { actionLabels } from "@/domain/pricing";
-import { localizeShoppingOptions } from "@/domain/market-data";
+import { prepareShoppingOptionsForList } from "@/domain/market-data";
 import { formatEuro } from "@/config/site";
 
 const strategies: Strategy[] = ["cheapest", "max_two", "fewest", "balance"];
@@ -34,15 +34,9 @@ export function DashboardView() {
   const activeItems = list.filter((item) => !item.checked && products.some((product) => product.id === item.productId));
   const productIds = activeItems.map((item) => item.productId);
   const hasPreciseLocation = profile.latitude != null && profile.longitude != null;
-  const allowedOptions = localizeShoppingOptions(shoppingOptions, stores, profile, profile.disabledStoreIds)
-    .filter((option) => productIds.includes(option.productId))
-    .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
-    .map((option) => {
-      const requested = activeItems.find((item) => item.productId === option.productId)?.quantity ?? 1;
-      const bundles = Math.ceil(requested / option.payableQuantity);
-      return { ...option, requestedQuantity: requested, priceCents: option.priceCents * bundles };
-    });
-  const plans = strategies.map((strategy) => optimizeShopping({ productIds, options: allowedOptions, strategy, storePenaltyCents: 300 }));
+  const allowedOptions = prepareShoppingOptionsForList(shoppingOptions, activeItems, stores, profile)
+    .filter((option) => productIds.includes(option.productId));
+  const plans = strategies.map((strategy) => optimizeShopping({ productIds, options: allowedOptions, strategy, storePenaltyCents: 300, maxStores: profile.maxStores ?? undefined }));
   const balance = plans.find((plan) => plan.id === "balance")!;
   const relevantStores = new Set(allowedOptions.map((option) => option.storeId)).size;
   const activeDeals = offers.filter((offer) => offer.actionType !== "none" && allowedOptions.some((option) => option.id === offer.id || option.id.startsWith(`${offer.id}:`)));

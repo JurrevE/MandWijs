@@ -72,7 +72,7 @@ Prijslogica, matching, Haversine-afstand en optimalisatie zijn pure services. Da
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | client/server | Supabase-project-URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client/server | publieke anon key, in combinatie met RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | alleen server | cron, imports en beheer; nooit naar de browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | alleen server | Supabase Secret key (`sb_secret_...`) of legacy service-role voor cron/imports; nooit naar de browser |
 | `PRICE_PROVIDER` | server | `demo` of `prijsprofeet` |
 | `PRIJSPROFEET_API_KEY` | alleen server | optioneel voor zoeken, vereist voor gedocumenteerde Pro-endpoints |
 | `PRIJSPROFEET_BASE_URL` | alleen server | standaard `https://www.prijsprofeet.nl` |
@@ -128,7 +128,7 @@ Filiaaldata toont op ieder relevant scherm de verplichte [OpenStreetMap-attribut
 
 ## E-mail en cron
 
-De templates ondersteunen `summary` en `full`. De endpoint `/api/cron/weekly-email` accepteert alleen `Authorization: Bearer <CRON_SECRET>`, gebruikt een idempotentiesleutel per gebruiker/week en laat Resend dezelfde sleutel ook controleren.
+De templates ondersteunen `summary` en `full`. De endpoint `/api/cron/weekly-email` accepteert alleen `Authorization: Bearer <CRON_SECRET>`, gebruikt een idempotentiesleutel per gebruiker/week en laat Resend dezelfde sleutel ook controleren. Per account worden de actieve, nog niet afgevinkte lijstregels, aantallen, keten- en filiaalvoorkeuren, maximale winkelstops, live PrijsProfeet-resultaten en OpenStreetMap-filialen binnen de straal verwerkt. De cron verstuurt bewust niets wanneer alleen demo-prijzen of geen betrouwbare matches beschikbaar zijn.
 
 `vercel.json` plant maandag 07:00 UTC. Voor een vaste Nederlandse lokale ochtend moet rekening worden gehouden met zomer-/wintertijd; gebruik zo nodig twee UTC-schema's met een tijdzonecontrole in de handler.
 
@@ -136,8 +136,19 @@ Voor echte verzending:
 
 1. verifieer een afzenderdomein bij Resend;
 2. stel `RESEND_API_KEY` en `RESEND_FROM_EMAIL` in;
-3. stel `CRON_SECRET` in bij Vercel;
-4. vul de live optimizerquery in de cronhandler met de Supabase-lijst- en offerdata.
+3. stel in `SUPABASE_SERVICE_ROLE_KEY` bij voorkeur een nieuwe Supabase Secret key (`sb_secret_...`) in, of anders de legacy `service_role`; uitsluitend server-side;
+4. stel een willekeurige `CRON_SECRET` van minimaal zestien tekens in bij Vercel;
+5. zet `PRICE_PROVIDER=prijsprofeet` en configureer de PrijsProfeet-variabelen;
+6. deploy opnieuw zodat Vercel de planning activeert.
+
+Test eerst zonder verzending voor Ã©Ã©n account. Het `userId` is de UUID uit Supabase Authentication:
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:CRON_SECRET" }
+Invoke-RestMethod -Headers $headers -Uri "http://localhost:3000/api/cron/weekly-email?dryRun=true&userId=<user-uuid>"
+```
+
+Een dry-run leest en berekent alles, maar roept Resend niet aan en schrijft geen verzendhistorie. Verwijder `dryRun=true` pas nadat de preview een realistisch totaal, `matched`-aantal en winkelplan toont. Vercel stuurt `CRON_SECRET` bij geplande uitvoeringen automatisch als Bearer-header. Resend en de database-idempotentiesleutel voorkomen dubbele verzendingen binnen dezelfde week.
 
 ## Vercel deployment
 
@@ -160,7 +171,7 @@ Voor echte verzending:
 
 - Filialen komen uit OpenStreetMap en kunnen onvolledig of verouderd zijn. MandWijs toont alleen ondersteunde ketens met coördinaten en verzint ontbrekende filialen niet.
 - De concrete responsevelden van `/match/*` zijn niet gedocumenteerd en worden bewust niet als betrouwbare productdata gemapt.
-- De cron bevat de veilige verzendgrens, maar de live optimizerquery moet bij aansluiting op Supabase worden ingevuld.
+- De Vercel-planning gebruikt UTC; 07:00 UTC is afhankelijk van zomer-/wintertijd 08:00 of 09:00 in Nederland.
 - Browserlocatie wordt niet reverse-geocodeerd; het label blijft daarom “Huidige locatie”. Handmatige invoer wordt wel geocodeerd na bevestiging.
 - Er is nog geen voorraadcontrole, reiskostenberekening of routeoptimalisatie.
 - Prijsvergelijking is primair per stuk; genormaliseerde kg/liter/100g-prijzen staan op de roadmap.
@@ -169,7 +180,7 @@ Voor echte verzending:
 
 - persistente, periodieke PrijsProfeet-import voor globale prijshistorie en adminrapportage;
 - een eigen of beheerde Nominatim/Overpass-instance zodra het gebruik boven een bescheiden MVP uitkomt;
-- volledige weekmailquery en ondertekende one-click unsubscribe;
+- ondertekende one-click unsubscribe en bounce-/complaintverwerking;
 - handmatige admin-matchcorrectie als persistente mutatie;
 - voorraadindicatie en prijs per kg/liter/100 gram;
 - telemetry, foutmonitoring en een expliciete privacy-/retentiepagina;
@@ -178,7 +189,7 @@ Voor echte verzending:
 ## Menselijke input die nog nodig is
 
 - het uitvoeren van de meegeleverde migraties en seed in het gekoppelde Supabase-project;
-- een server-side service-role key voor geplande globale imports en beheer (niet nodig voor normale account-CRUD);
+- een server-side Supabase Secret key of legacy service-role voor geplande globale imports en beheer (niet nodig voor normale account-CRUD);
 - Google OAuth clientconfiguratie;
 - een PrijsProfeet Pro-key wanneer EAN-match- of prijshistorie-endpoints worden geactiveerd;
 - Resend API-key en geverifieerd afzenderdomein;

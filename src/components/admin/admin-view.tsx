@@ -14,6 +14,7 @@ export function AdminView() {
   const { resetDemo, refreshMarketData, chains, offers, products, dataSource, dataUpdatedAt, dataWarnings } = useAppState();
   const [message, setMessage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
 
   const refresh = () => {
     setSyncing(true);
@@ -28,6 +29,24 @@ export function AdminView() {
   const reset = () => {
     resetDemo();
     setMessage("Lokale demo-data opnieuw geladen.");
+  };
+
+  const testWeeklyEmail = async () => {
+    setTestingEmail(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/weekly-email-preview", { method: "POST" });
+      const result = await response.json() as { error?: string; previewed?: number; results?: Array<{ subject?: string; matched?: number; unmatched?: number; reason?: string }> };
+      if (!response.ok) throw new Error(result.error ?? "Weekmail-preview is mislukt.");
+      const preview = result.results?.[0];
+      setMessage(result.previewed
+        ? `Weekmail-preview geslaagd: ${preview?.subject ?? "persoonlijk advies"} · ${preview?.matched ?? 0} matches · ${preview?.unmatched ?? 0} niet gematcht.`
+        : `Geen mail klaar voor verzending: ${preview?.reason ?? "controleer de actieve lijst en mailvoorkeur."}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Weekmail-preview is mislukt.");
+    } finally {
+      setTestingEmail(false);
+    }
   };
 
   return (
@@ -47,7 +66,7 @@ export function AdminView() {
           <div className="overflow-x-auto"><table className="w-full min-w-[42rem] text-left text-sm"><thead className="bg-[#f7faf8] text-xs text-mandwijs-muted"><tr><th className="px-5 py-3 font-bold">Provider</th><th className="px-5 py-3 font-bold">Status</th><th className="px-5 py-3 font-bold">Bijgewerkt</th><th className="px-5 py-3 font-bold">Verwerkt</th><th className="px-5 py-3 font-bold">Waarschuwingen</th></tr></thead><tbody><tr className="border-t border-mandwijs-line"><td className="px-5 py-4 font-bold">{dataSource === "live" ? "PrijsProfeetProvider" : "DemoDataProvider"}</td><td className="px-5 py-4"><Badge tone={dataSource === "live" ? "success" : "warning"}>{dataSource === "live" ? "Live" : "Fallback"}</Badge></td><td className="px-5 py-4 text-mandwijs-muted">{new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(new Date(dataUpdatedAt))}</td><td className="px-5 py-4">{offers.length}</td><td className="px-5 py-4">{dataWarnings.length}</td></tr></tbody></table></div>
         </Card>
 
-        <Card className="p-5 shadow-none"><h2 className="font-black">Beheeracties</h2><p className="mt-1 text-xs leading-5 text-mandwijs-muted">Deze acties zijn server-side beschermd met een adminrol.</p><div className="mt-5 grid gap-2"><Button variant="secondary" onClick={reset} className="justify-start"><RotateCcw className="size-4" /> Lokale demo opnieuw laden</Button><Button variant="secondary" onClick={() => setMessage("Testmail-preview aangemaakt; echte verzending vereist Resend.")} className="justify-start"><MailCheck className="size-4" /> Testmail naar admin</Button><Button variant="secondary" onClick={() => setMessage(`${chains.length} supermarktketens zijn geconfigureerd.`)} className="justify-start"><Store className="size-4" /> Supermarktketens controleren</Button></div><div className="mt-5 rounded-xl bg-[#fff8ed] p-4 text-xs leading-5 text-[#85511b]"><strong>{dataSource === "live" ? "Gedocumenteerde provider actief" : "Veilige fallback actief"}</strong><br />Niet-EAN-matches blijven indicatief; aankomende en historische prijzen tellen niet mee.<br /><DataAttribution source={dataSource} className="mt-2 inline-block text-[#85511b]" /></div></Card>
+        <Card className="p-5 shadow-none"><h2 className="font-black">Beheeracties</h2><p className="mt-1 text-xs leading-5 text-mandwijs-muted">Deze acties zijn server-side beschermd met een adminrol.</p><div className="mt-5 grid gap-2"><Button variant="secondary" onClick={reset} className="justify-start"><RotateCcw className="size-4" /> Lokale demo opnieuw laden</Button><Button variant="secondary" onClick={testWeeklyEmail} disabled={testingEmail} className="justify-start"><MailCheck className="size-4" /> {testingEmail ? "Weekmail berekenenâ€¦" : "Weekmail-preview testen"}</Button><Button variant="secondary" onClick={() => setMessage(`${chains.length} supermarktketens zijn geconfigureerd.`)} className="justify-start"><Store className="size-4" /> Supermarktketens controleren</Button></div><div className="mt-5 rounded-xl bg-[#fff8ed] p-4 text-xs leading-5 text-[#85511b]"><strong>{dataSource === "live" ? "Gedocumenteerde provider actief" : "Veilige fallback actief"}</strong><br />Niet-EAN-matches blijven indicatief; aankomende en historische prijzen tellen niet mee.<br /><DataAttribution source={dataSource} className="mt-2 inline-block text-[#85511b]" /></div></Card>
       </div>
 
       <Card className="mt-5 overflow-hidden shadow-none"><div className="border-b border-mandwijs-line p-5"><h2 className="font-black">Providerproducten</h2><p className="mt-1 text-xs text-mandwijs-muted">EAN bepaalt verificatie; overige resultaten zijn indicatief</p></div><div className="overflow-x-auto"><table className="w-full min-w-[45rem] text-left text-sm"><thead className="bg-[#f7faf8] text-xs text-mandwijs-muted"><tr><th className="px-5 py-3">Bronproduct</th><th className="px-5 py-3">Keten</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Geldig</th><th className="px-5 py-3">Effectieve prijs</th></tr></thead><tbody>{offers.slice(0, 6).map((offer) => <tr key={offer.id} className="border-t border-mandwijs-line"><td className="px-5 py-4 font-bold">{offer.product.name}</td><td className="px-5 py-4 text-mandwijs-muted">{chains.find((chain) => chain.id === offer.chainId)?.name ?? offer.chainId}</td><td className="px-5 py-4"><Badge tone={offer.product.ean ? "success" : "warning"}>{offer.product.ean ? "EAN beschikbaar" : "Indicatief"}</Badge></td><td className="px-5 py-4">{offer.validFrom} – {offer.validUntil}</td><td className="px-5 py-4 font-bold">{formatEuro(offer.effectiveUnitPriceCents)}</td></tr>)}</tbody></table></div></Card>

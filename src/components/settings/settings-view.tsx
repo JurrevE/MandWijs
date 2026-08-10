@@ -5,9 +5,11 @@ import Link from "next/link";
 import {
   BellRing,
   Check,
+  ChevronRight,
   CircleUserRound,
   KeyRound,
   Mail,
+  MapPin,
   Route,
   Save,
   ShieldCheck,
@@ -95,9 +97,18 @@ export function SettingsView() {
                 </label>
                 <div className="min-w-0 sm:col-span-2">
                   <h3 className="text-sm font-bold">Actieve locatie</h3>
-                  <p className="mt-2 break-words rounded-xl border border-mandwijs-line bg-[#f8faf9] p-3.5 text-sm sm:p-4">
-                    {profile.locationLabel} · {profile.radiusKm} km radius
-                  </p>
+                  <div className="mt-2 flex min-w-0 flex-col gap-3 rounded-xl border border-mandwijs-line bg-[#f8faf9] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                    <span className="flex min-w-0 items-start gap-3">
+                      <MapPin className="mt-0.5 size-5 shrink-0 text-mandwijs-primary" />
+                      <span className="min-w-0">
+                        <strong className="block break-words text-sm">{profile.locationLabel}</strong>
+                        <span className="mt-0.5 block text-xs text-mandwijs-muted">Zoekradius: {profile.radiusKm} km</span>
+                      </span>
+                    </span>
+                    <Link href="/winkels#locatie" className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#e4f2ec] px-3 text-sm font-bold text-mandwijs-deep hover:bg-[#d9ece4] sm:w-auto">
+                      Locatie wijzigen <ChevronRight className="size-4" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </section>

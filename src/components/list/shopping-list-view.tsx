@@ -56,12 +56,12 @@ export function ShoppingListView() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="space-y-4">
-          <Card className="overflow-hidden shadow-none">
+      <div className="grid min-w-0 gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-4">
+          <Card className="w-full min-w-0 max-w-full overflow-hidden shadow-none">
             <div className="flex flex-col gap-4 bg-mandwijs-deep p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div><Badge tone="deal"><CheckCircle2 className="mr-1 size-3" /> {strategyLabels[strategy]}</Badge><h2 className="mt-3 text-xl font-black">{plan.label}</h2><p className="mt-1 max-w-xl text-xs leading-5 text-white/60">{plan.description}</p></div>
-              <div className="sm:text-right"><span className="block text-xs font-bold uppercase tracking-wider text-white/50">Geschat totaal</span><strong className="mt-1 block text-3xl font-black">{formatEuro(plan.totalCents)}</strong><span className="text-xs text-white/60">{plan.storeCount} {plan.storeCount === 1 ? "winkel" : "winkels"}</span></div>
+              <div className="min-w-0"><Badge tone="deal"><CheckCircle2 className="mr-1 size-3" /> {strategyLabels[strategy]}</Badge><h2 className="mt-3 text-xl font-black">{plan.label}</h2><p className="mt-1 max-w-xl text-xs leading-5 text-white/60">{plan.description}</p></div>
+              <div className="shrink-0 sm:text-right"><span className="block text-xs font-bold uppercase tracking-wider text-white/50">Geschat totaal</span><strong className="mt-1 block text-3xl font-black">{formatEuro(plan.totalCents)}</strong><span className="text-xs text-white/60">{plan.storeCount} {plan.storeCount === 1 ? "winkel" : "winkels"}</span></div>
             </div>
 
             {storeIds.map((storeId, index) => {
@@ -69,19 +69,19 @@ export function ShoppingListView() {
               const chain = chains.find((item) => item.id === store?.chainId);
               if (!store || !chain) return null;
               const options = plan.options.filter((option) => option.storeId === storeId);
-              return <section key={storeId} className="border-b border-mandwijs-line last:border-0">
-                <div className="flex items-center gap-3 bg-[#f7faf8] px-4 py-4 sm:px-6">
-                  <span className="grid size-7 place-items-center rounded-full bg-mandwijs-deep text-xs font-black text-white">{index + 1}</span>
-                  <span className="grid size-10 place-items-center rounded-xl text-xs font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span>
+              return <section key={storeId} className="min-w-0 border-b border-mandwijs-line last:border-0">
+                <div className="flex min-w-0 items-center gap-2.5 bg-[#f7faf8] px-4 py-4 sm:gap-3 sm:px-6">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-mandwijs-deep text-xs font-black text-white">{index + 1}</span>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl text-xs font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span>
                   <span className="min-w-0 flex-1"><h3 className="truncate text-sm font-extrabold">{store.name}</h3><p className="truncate text-xs text-mandwijs-muted">{store.address}, {store.city}</p></span>
-                  <span className="text-right"><strong className="block text-sm">{formatEuro(options.reduce((sum, option) => sum + option.priceCents, 0))}</strong><span className="text-[.68rem] text-mandwijs-muted">{options.length} producten</span></span>
+                  <span className="shrink-0 text-right"><strong className="block text-sm">{formatEuro(options.reduce((sum, option) => sum + option.priceCents, 0))}</strong><span className="text-[.68rem] text-mandwijs-muted">{options.length} producten</span></span>
                 </div>
                 <div className="divide-y divide-mandwijs-line px-4 sm:px-6">
                   {options.map((option) => {
                     const item = activeItems.find((entry) => entry.productId === option.productId)!;
-                    return <article key={option.id} className="flex gap-3 py-4">
+                    return <article key={option.id} className="flex min-w-0 gap-3 py-4">
                       <button onClick={() => updateListItem(option.productId, { checked: true })} className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg border-2 border-[#b6c9c1] text-white hover:border-mandwijs-primary hover:bg-mandwijs-primary" aria-label={`${option.productName} afvinken`}><Check className="size-3.5" /></button>
-                      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-extrabold">{option.productName}</h4>{option.matchType === "house_brand" && <Badge tone="warning">Huismerk alternatief</Badge>}{option.actionLabel && <Badge tone="deal">Aanbieding</Badge>}</div><p className="mt-1 text-xs text-mandwijs-muted">{item.quantity}× gevraagd · {option.payableQuantity > 1 ? `${option.payableQuantity}× betalen per actiebundel` : "prijs per stuk"}</p>{option.warning && <p className="mt-2 flex items-start gap-1.5 text-xs font-semibold leading-5 text-[#9a5616]"><CircleAlert className="mt-0.5 size-3.5 shrink-0" />{option.warning}</p>}</div>
+                      <div className="min-w-0 flex-1"><div className="flex min-w-0 flex-wrap items-center gap-2"><h4 className="min-w-0 break-words text-sm font-extrabold">{option.productName}</h4>{option.matchType === "house_brand" && <Badge tone="warning">Huismerk alternatief</Badge>}{option.actionLabel && <Badge tone="deal">Aanbieding</Badge>}</div><p className="mt-1 text-xs text-mandwijs-muted">{item.quantity}× gevraagd · {option.payableQuantity > 1 ? `${option.payableQuantity}× betalen per actiebundel` : "prijs per stuk"}</p>{option.warning && <p className="mt-2 flex min-w-0 items-start gap-1.5 break-words text-xs font-semibold leading-5 text-[#9a5616] [overflow-wrap:anywhere]"><CircleAlert className="mt-0.5 size-3.5 shrink-0" />{option.warning}</p>}</div>
                       <strong className="shrink-0 text-sm">{formatEuro(option.priceCents)}</strong>
                     </article>;
                   })}
@@ -95,7 +95,7 @@ export function ShoppingListView() {
           {checkedItems.length > 0 && <Card className="overflow-hidden shadow-none"><div className="flex items-center justify-between border-b border-mandwijs-line px-5 py-4"><h2 className="text-sm font-black">Afgevinkt ({checkedItems.length})</h2><button onClick={() => checkedItems.forEach((item) => updateListItem(item.productId, { checked: false }))} className="text-xs font-bold text-mandwijs-deep hover:underline"><RotateCcw className="mr-1 inline size-3.5" />Herstellen</button></div><div className="divide-y divide-mandwijs-line">{checkedItems.map((item) => <div key={item.productId} className="flex items-center gap-3 px-5 py-3 opacity-55"><button onClick={() => updateListItem(item.productId, { checked: false })} className="grid size-6 place-items-center rounded-lg bg-mandwijs-primary text-white"><Check className="size-4" /></button><span className="flex-1 text-sm line-through">{products.find((product) => product.id === item.productId)?.name}</span><button onClick={() => removeFromList(item.productId)} aria-label="Verwijderen"><X className="size-4" /></button></div>)}</div></Card>}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <Card className="p-5 shadow-none"><h2 className="text-sm font-black">Hoeveelheden</h2><div className="mt-4 space-y-4">{activeItems.map((item) => { const product = products.find((entry) => entry.id === item.productId); return <div key={item.productId}><div className="mb-2 flex items-center justify-between gap-3"><span className="truncate text-xs font-bold">{product?.name}</span><button onClick={() => removeFromList(item.productId)} className="text-mandwijs-muted hover:text-[#a53b43]" aria-label="Verwijderen"><Trash2 className="size-3.5" /></button></div><div className="flex items-center rounded-xl border border-mandwijs-line bg-white"><button onClick={() => updateListItem(item.productId, { quantity: Math.max(1, item.quantity - 1) })} className="grid size-10 place-items-center" aria-label="Minder"><Minus className="size-4" /></button><span className="flex-1 text-center text-sm font-black">{item.quantity}</span><button onClick={() => updateListItem(item.productId, { quantity: item.quantity + 1 })} className="grid size-10 place-items-center" aria-label="Meer"><Plus className="size-4" /></button></div></div>; })}</div><ButtonLink href="/producten" variant="soft" className="mt-5 w-full"><Plus className="size-4" /> Product toevoegen</ButtonLink></Card>
           <Card className="p-5 shadow-none"><h2 className="flex items-center gap-2 text-sm font-black"><Store className="size-4 text-mandwijs-primary" />Prijsuitleg</h2><p className="mt-3 text-xs leading-5 text-mandwijs-muted">Het totaal bevat verplichte actie-aantallen. De balansscore telt € 3,00 per extra winkel op om gemak mee te wegen; dat bedrag betaal je niet echt.</p><DataAttribution source={dataSource} className="mt-3 block text-xs text-mandwijs-deep" /><LocationAttribution source={storeDataSource} className="mt-2 block text-xs text-mandwijs-deep" /></Card>
         </aside>

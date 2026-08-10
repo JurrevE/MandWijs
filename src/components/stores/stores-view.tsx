@@ -88,7 +88,7 @@ export function StoresView() {
       <PageHeading eyebrow="Jouw omgeving" title="Locatie & winkels" description="MandWijs gebruikt echte OpenStreetMap-filialen en controleert de afstand opnieuw in de app." />
       <div className="grid gap-5 xl:grid-cols-[23rem_minmax(0,1fr)]">
         <aside className="space-y-5">
-          <Card className="p-5 shadow-none">
+          <Card id="locatie" className="scroll-mt-24 p-5 shadow-none">
             <h2 className="flex items-center gap-2 font-black"><MapPin className="size-5 text-mandwijs-primary" /> Actieve locatie</h2>
             <p className="mt-2 text-xs leading-5 text-mandwijs-muted">Gebruik je browserlocatie of zoek één Nederlands adres of postcode. Geen autocomplete of achtergrondtracking.</p>
             <Button onClick={requestLocation} variant="soft" className="mt-5 w-full"><LocateFixed className="size-4" /> Gebruik browserlocatie</Button>

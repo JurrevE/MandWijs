@@ -26,6 +26,7 @@ interface AppStateValue extends PersistedState {
   removeFromList: (productId: string) => void;
   clearList: () => void;
   updateProfile: (patch: Partial<AppProfile>) => void;
+  flushPersistence: () => Promise<ActionResult>;
   toggleChain: (chainId: string) => void;
   toggleStore: (storeId: string) => void;
   resetDemo: () => void;
@@ -91,6 +92,12 @@ export function AppStateProvider({ children, initialState }: { children: React.R
         stateRef.current = next;
         setState(next);
       });
+  }, []);
+
+  const flushPersistence = useCallback(async (): Promise<ActionResult> => {
+    await persistenceQueue.current;
+    const error = stateRef.current.persistenceError;
+    return error ? { ok: false, error } : { ok: true };
   }, []);
 
   const addProduct = useCallback((product: Omit<PersonalProduct, "id">) => {
@@ -283,13 +290,14 @@ export function AppStateProvider({ children, initialState }: { children: React.R
     removeFromList,
     clearList,
     updateProfile,
+    flushPersistence,
     toggleChain,
     toggleStore,
     resetDemo,
     refreshMarketData,
     refreshNearbyStores,
     storesLoading,
-  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, toggleChain, toggleStore, resetDemo, refreshMarketData, refreshNearbyStores, storesLoading]);
+  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, flushPersistence, toggleChain, toggleStore, resetDemo, refreshMarketData, refreshNearbyStores, storesLoading]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

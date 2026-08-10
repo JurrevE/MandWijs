@@ -92,7 +92,7 @@ Kopieer `.env.example` naar `.env.local`. Commit nooit `.env.local`, service-rol
 
 1. Kopieer de Supabase-project-URL en anon key naar `.env.local`.
 2. Installeer de Supabase CLI en koppel het project: `supabase link --project-ref <ref>`.
-3. Voer `supabase db push` uit. Dit draait alle migraties in oplopende volgorde, inclusief de accountbackfill en de tabel voor voorkeuren van OpenStreetMap-filialen. Voer daarna desgewenst `supabase db seed` uit. Zonder CLI kun je de SQL-bestanden uit `supabase/migrations` in oplopende volgorde in de Supabase SQL Editor uitvoeren, gevolgd door `supabase/seed.sql`.
+3. Voer `supabase db push` uit. Dit draait alle migraties in oplopende volgorde, inclusief de account- en onboardingbackfills en de tabel voor voorkeuren van OpenStreetMap-filialen. Voer daarna desgewenst `supabase db seed` uit. Zonder CLI kun je de SQL-bestanden uit `supabase/migrations` in oplopende volgorde in de Supabase SQL Editor uitvoeren, gevolgd door `supabase/seed.sql`.
 4. Voeg in Supabase Auth de lokale en productie redirect-URL's toe:
    - `http://localhost:3000/auth/callback`
    - `https://jouw-domein.nl/auth/callback`

@@ -128,7 +128,7 @@ export async function googleLoginAction() {
   }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${appUrl}/auth/callback?next=/dashboard` },
+    options: { redirectTo: `${appUrl}/auth/callback?next=/onboarding` },
   });
   if (error || !data.url) redirect(messageUrl("/login", "error", "Google-inloggen kon niet worden gestart."));
   await clearDemoSession();

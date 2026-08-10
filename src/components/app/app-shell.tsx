@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -55,8 +56,104 @@ function NavLink({ item, mobile = false }: { item: (typeof navigation)[number]; 
   );
 }
 
+function ProviderStatus({
+  dataSource,
+  detail,
+}: {
+  dataSource: "demo" | "live";
+  detail: string;
+}) {
+  return (
+    <div className="group relative mb-3 w-fit">
+      <button
+        type="button"
+        aria-label="Datastatus tonen"
+        aria-describedby="provider-status-tooltip"
+        className="grid size-10 place-items-center rounded-full bg-mandwijs-deep text-mandwijs-accent shadow-sm outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-4 focus-visible:ring-mandwijs-secondary/70"
+      >
+        <CircleHelp className="size-5" />
+      </button>
+      <div
+        id="provider-status-tooltip"
+        role="tooltip"
+        className="pointer-events-none invisible absolute bottom-0 left-12 z-50 w-60 translate-x-1 rounded-2xl bg-mandwijs-deep p-4 text-white opacity-0 shadow-xl transition duration-150 group-hover:visible group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-x-0 group-focus-within:opacity-100"
+      >
+        <p className="text-xs font-bold">{dataSource === "live" ? "PrijsProfeet live" : "Demo-fallback actief"}</p>
+        <p className="mt-1 text-[.7rem] leading-5 text-white/65">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function AccountMenu({ name, email, mode }: { name: string; email: string; mode: "demo" | "supabase" }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  const accountLabel = mode === "supabase" ? (email || "Supabase-account") : "Demo-account";
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label="Accountmenu"
+        aria-expanded={open}
+        aria-controls="account-menu"
+        onClick={() => setOpen((value) => !value)}
+        className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-[#f1f5f3] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-mandwijs-secondary/60"
+      >
+        <span className="grid size-9 place-items-center rounded-xl bg-mandwijs-secondary text-sm font-black text-mandwijs-deep">{name.slice(0, 1).toUpperCase()}</span>
+        <span className="hidden text-left sm:block"><strong className="block text-xs">{name}</strong><span className="block max-w-40 truncate text-[.65rem] text-mandwijs-muted">{accountLabel}</span></span>
+        <ChevronDown className={`hidden size-4 text-mandwijs-muted transition-transform sm:block ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div id="account-menu" className="absolute right-0 top-[calc(100%+.5rem)] z-50 w-64 overflow-hidden rounded-2xl border border-mandwijs-line bg-white p-2 shadow-xl">
+          <div className="border-b border-mandwijs-line px-3 py-3">
+            <p className="truncate text-sm font-black">{name}</p>
+            <p className="mt-0.5 truncate text-xs text-mandwijs-muted">{accountLabel}</p>
+          </div>
+          <div className="py-1">
+            <Link href="/instellingen" onClick={() => setOpen(false)} className="flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-bold text-mandwijs-muted hover:bg-[#f0f5f3] hover:text-mandwijs-text focus:bg-[#f0f5f3] focus:outline-none"><Settings className="size-4" /> Instellingen</Link>
+            <Link href="/winkels" onClick={() => setOpen(false)} className="flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-bold text-mandwijs-muted hover:bg-[#f0f5f3] hover:text-mandwijs-text focus:bg-[#f0f5f3] focus:outline-none"><Store className="size-4" /> Winkels in de buurt</Link>
+          </div>
+          <form action={logoutAction} className="border-t border-mandwijs-line pt-1">
+            <button className="flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-[#a04444] hover:bg-[#fff2f2] focus:bg-[#fff2f2] focus:outline-none"><LogOut className="size-4" /> Uitloggen</button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { profile, list, mode, dataSource, userEmail, databaseReady, persistenceError } = useAppState();
+  const { profile, list, mode, dataSource, dataWarnings, userEmail, databaseReady, persistenceError } = useAppState();
+  const providerDetail = persistenceError
+    ?? (dataSource === "live"
+      ? "Actuele providerdata is geladen. Controleer aanbiedingen altijd nog bij de winkel."
+      : dataWarnings[0] ?? "PrijsProfeet leverde geen bruikbare actuele data; veilige demo-prijzen worden getoond.");
+  const statusDetail = mode === "supabase" && !databaseReady
+    ? "Voer de Supabase-migratie nog uit."
+    : providerDetail;
   return (
     <div className="min-h-screen bg-[#f7faf8] lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-screen border-r border-mandwijs-line bg-white px-4 py-5 lg:flex lg:flex-col">
@@ -69,11 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {secondary.map((item) => <NavLink key={item.href} item={item} />)}
         </nav>
         <div className="mt-auto">
-          <div className="mb-3 rounded-2xl bg-mandwijs-deep p-4 text-white">
-            <CircleHelp className="size-5 text-mandwijs-accent" />
-            <p className="mt-3 text-xs font-bold">{dataSource === "live" ? "PrijsProfeet live" : "Demo-fallback actief"}</p>
-            <p className="mt-1 text-[.7rem] leading-5 text-white/60">{persistenceError ?? (mode === "supabase" ? (databaseReady ? "Accountgegevens worden veilig opgeslagen." : "Voer de Supabase-migratie nog uit.") : "Je gebruikt een lokale demosessie.")}</p>
-          </div>
+          <ProviderStatus dataSource={dataSource} detail={statusDetail} />
           <form action={logoutAction}>
             <button className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-mandwijs-muted hover:bg-[#f0f5f3] hover:text-mandwijs-text">
               <LogOut className="size-[1.1rem]" /> Uitloggen
@@ -94,11 +187,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ShoppingBasket className="size-5" />
             {list.length > 0 && <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-mandwijs-deep text-[.62rem] font-black text-white">{list.length}</span>}
           </Link>
-          <button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-[#f1f5f3]" aria-label="Accountmenu">
-            <span className="grid size-9 place-items-center rounded-xl bg-mandwijs-secondary text-sm font-black text-mandwijs-deep">{profile.name.slice(0, 1).toUpperCase()}</span>
-            <span className="hidden text-left sm:block"><strong className="block text-xs">{profile.name}</strong><span className="block max-w-40 truncate text-[.65rem] text-mandwijs-muted">{mode === "supabase" ? (userEmail || "Supabase-account") : "Demo-account"}</span></span>
-            <ChevronDown className="hidden size-4 text-mandwijs-muted sm:block" />
-          </button>
+          <AccountMenu name={profile.name} email={userEmail} mode={mode} />
         </header>
         <main className="mx-auto max-w-[95rem] px-4 pb-28 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pb-12">{children}</main>
       </div>

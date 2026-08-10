@@ -118,24 +118,24 @@ export function DashboardView() {
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-        <Card className="p-5 shadow-none sm:p-6">
-          <div className="flex items-center justify-between"><div><h2 className="text-lg font-black">Nu voordelig</h2><p className="mt-1 text-xs text-mandwijs-muted">Aanbiedingen voor producten op jouw lijst</p></div><ButtonLink href="/aanbiedingen" variant="ghost" className="px-2">Alles <ArrowRight className="size-4" /></ButtonLink></div>
+      <div className="grid min-w-0 gap-3 sm:gap-5 xl:grid-cols-[1.2fr_.8fr]">
+        <Card className="min-w-0 rounded-2xl p-4 shadow-none sm:rounded-[1.25rem] sm:p-6">
+          <div className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><h2 className="text-lg font-black">Nu voordelig</h2><p className="mt-1 text-xs leading-5 text-mandwijs-muted">Aanbiedingen voor producten op jouw lijst</p></div><ButtonLink href="/aanbiedingen" variant="ghost" className="min-h-9 shrink-0 px-2.5">Alles <ArrowRight className="size-4" /></ButtonLink></div>
           <div className="mt-4 divide-y divide-mandwijs-line">
             {activeDeals.slice(0, 4).map((offer) => {
               const chain = chains.find((item) => item.id === offer.chainId);
               if (!chain) return null;
-              return <Link href="/aanbiedingen" key={offer.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span>
-                <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{offer.product.name}</strong><span className="mt-0.5 block text-xs text-mandwijs-muted">{chain.name} · {actionLabels[offer.actionType]}</span></span>
-                <span className="text-right"><strong className="block text-sm">{formatEuro(offer.effectiveUnitPriceCents)}</strong><span className="text-[.68rem] text-mandwijs-muted">per stuk</span></span>
-                <ChevronRight className="size-4 text-mandwijs-muted" />
+              return <Link href="/aanbiedingen" key={offer.id} className="flex min-w-0 items-center gap-2.5 py-3 first:pt-0 last:pb-0 sm:gap-3 sm:py-3.5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl text-[.68rem] font-black text-white sm:size-11 sm:text-xs" style={{ background: chain.color }}>{chain.shortName}</span>
+                <span className="min-w-0 flex-1"><strong className="block truncate text-[.82rem] leading-5 sm:text-sm">{offer.product.name}</strong><span className="mt-0.5 block truncate text-[.68rem] text-mandwijs-muted sm:text-xs">{chain.name} · {actionLabels[offer.actionType]}</span></span>
+                <span className="shrink-0 text-right"><strong className="block text-xs tabular-nums sm:text-sm">{formatEuro(offer.effectiveUnitPriceCents)}</strong><span className="text-[.65rem] text-mandwijs-muted">per stuk</span></span>
+                <ChevronRight className="hidden size-4 shrink-0 text-mandwijs-muted sm:block" />
               </Link>;
             })}
           </div>
         </Card>
 
-        <Card className="p-5 shadow-none sm:p-6">
+        <Card className="min-w-0 rounded-2xl p-4 shadow-none sm:rounded-[1.25rem] sm:p-6">
           <h2 className="text-lg font-black">Datastatus</h2>
           <div className="mt-5 space-y-4">
             <div className="flex gap-3"><Clock3 className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Bijgewerkt {new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" }).format(new Date(dataUpdatedAt))}</strong><span className="text-xs text-mandwijs-muted">{offers.length} prijzen verwerkt</span></span></div>

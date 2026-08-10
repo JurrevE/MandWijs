@@ -1,14 +1,11 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { credentialsSchema, loginErrorMessage } from "@/domain/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const credentialsSchema = z.object({
-  email: z.email("Vul een geldig e-mailadres in."),
-  password: z.string().min(8, "Gebruik minimaal 8 tekens."),
-});
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -35,15 +32,37 @@ export async function loginAction(formData: FormData) {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(messageUrl("/login", "error", parsed.error.issues[0].message));
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient({ strictCookieWrites: true });
   if (!supabase) {
     await setDemoSession(parsed.data.email);
     redirect("/dashboard");
   }
 
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) redirect(messageUrl("/login", "error", "E-mailadres of wachtwoord klopt niet."));
+  let result;
+  try {
+    result = await supabase.auth.signInWithPassword(parsed.data);
+  } catch {
+    redirect(messageUrl("/login", "error", "De beveiligde sessie kon niet worden opgeslagen. Sta cookies toe en probeer het opnieuw."));
+  }
+
+  if (result.error) {
+    console.warn("Supabase login geweigerd", { code: result.error.code, status: result.error.status });
+    redirect(messageUrl("/login", "error", loginErrorMessage(result.error)));
+  }
+
+  if (!result.data.session || !result.data.user) {
+    console.warn("Supabase login leverde geen volledige sessie op");
+    redirect(messageUrl("/login", "error", "Inloggen lukte, maar de sessie ontbreekt. Probeer het opnieuw."));
+  }
+
+  const { data: verified, error: verificationError } = await supabase.auth.getUser();
+  if (verificationError || !verified.user || verified.user.id !== result.data.user.id) {
+    console.warn("Supabase sessiecontrole mislukt", { code: verificationError?.code, status: verificationError?.status });
+    redirect(messageUrl("/login", "error", "Inloggen lukte, maar de sessie kon niet worden bevestigd. Sta cookies toe en probeer het opnieuw."));
+  }
+
   await clearDemoSession();
+  revalidatePath("/", "layout");
   redirect("/dashboard");
 }
 

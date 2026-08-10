@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Chrome, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { googleLoginAction, loginAction, requestPasswordResetAction, signupAction } from "@/app/auth/actions";
 
 type Mode = "login" | "register" | "forgot";
@@ -15,6 +15,7 @@ const content = {
 export function AuthCard({ mode, error, message }: { mode: Mode; error?: string; message?: string }) {
   const copy = content[mode];
   const action = mode === "login" ? loginAction : mode === "register" ? signupAction : requestPasswordResetAction;
+  const pendingLabel = mode === "login" ? "Bezig met inloggen..." : mode === "register" ? "Account maken..." : "Herstelmail versturen...";
 
   return (
     <main className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(30rem,.8fr)]">
@@ -32,18 +33,18 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
             {mode === "register" && (
               <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="name" autoComplete="name" className="input-field input-field-with-icon" placeholder="Bijvoorbeeld Sanne" /></span></label>
             )}
-            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" className="input-field input-field-with-icon" placeholder="jij@voorbeeld.nl" /></span></label>
+            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" enterKeyHint={mode === "forgot" ? "send" : "next"} className="input-field input-field-with-icon" placeholder="jij@voorbeeld.nl" /></span></label>
             {mode !== "forgot" && (
-              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} className="input-field input-field-with-icon" placeholder="Minimaal 8 tekens" /></span></label>
+              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="input-field input-field-with-icon" placeholder="Minimaal 8 tekens" /></span></label>
             )}
             {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-bold text-mandwijs-deep hover:underline">Wachtwoord vergeten?</Link></div>}
-            <Button type="submit" className="min-h-13 w-full text-base">{copy.submit}</Button>
+            <AuthSubmitButton label={copy.submit} pendingLabel={pendingLabel} />
           </form>
 
           {mode !== "forgot" && (
             <>
               <div className="my-6 flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-mandwijs-muted before:h-px before:flex-1 before:bg-mandwijs-line after:h-px after:flex-1 after:bg-mandwijs-line">of</div>
-              <form action={googleLoginAction}><Button type="submit" variant="secondary" className="min-h-13 w-full"><Chrome className="size-5" /> Doorgaan met Google</Button></form>
+              <form action={googleLoginAction}><AuthSubmitButton label="Doorgaan met Google" pendingLabel="Google openen..." kind="google" /></form>
             </>
           )}
           <p className="mt-7 text-center text-sm text-mandwijs-muted">

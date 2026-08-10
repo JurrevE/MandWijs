@@ -178,6 +178,9 @@ Een dry-run leest en berekent alles, maar roept Resend niet aan en schrijft geen
 
 ## Wat moet later nog worden gebouwd?
 
+De actuele, afvinkbare backlog staat in [`docs/todo.md`](docs/todo.md), inclusief
+de volledige checklist om de maandagmail gecontroleerd live te zetten.
+
 - persistente, periodieke PrijsProfeet-import voor globale prijshistorie en adminrapportage;
 - een eigen of beheerde Nominatim/Overpass-instance zodra het gebruik boven een bescheiden MVP uitkomt;
 - ondertekende one-click unsubscribe en bounce-/complaintverwerking;

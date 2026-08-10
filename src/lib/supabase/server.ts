@@ -3,7 +3,11 @@ import { cookies } from "next/headers";
 import { isSupabaseConfigured } from "./config";
 import type { Database } from "./database.types";
 
-export async function createSupabaseServerClient() {
+type ServerClientOptions = {
+  strictCookieWrites?: boolean;
+};
+
+export async function createSupabaseServerClient(options: ServerClientOptions = {}) {
   if (!isSupabaseConfigured()) return null;
   const cookieStore = await cookies();
 
@@ -16,7 +20,8 @@ export async function createSupabaseServerClient() {
         setAll: (items) => {
           try {
             items.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          } catch {
+          } catch (error) {
+            if (options.strictCookieWrites) throw error;
             // Server Components mogen cookies niet altijd schrijven; proxy ververst ze.
           }
         },

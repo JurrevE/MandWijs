@@ -9,7 +9,7 @@ import type {
 } from "@/domain/types";
 
 export const demoChains: SupermarketChain[] = [
-  { id: "ah", name: "Albert Heijn", shortName: "AH", color: "#169bd5", active: true },
+  { id: "albert-heijn", name: "Albert Heijn", shortName: "AH", color: "#169bd5", active: true },
   { id: "jumbo", name: "Jumbo", shortName: "JU", color: "#f5c400", active: true },
   { id: "lidl", name: "Lidl", shortName: "LI", color: "#174b8b", active: true },
   { id: "aldi", name: "Aldi", shortName: "AL", color: "#193d84", active: true },
@@ -22,7 +22,7 @@ export const demoChains: SupermarketChain[] = [
 ];
 
 export const demoStores: StoreLocation[] = [
-  { id: "ah-neude", chainId: "ah", name: "Albert Heijn Neude", address: "Neude 7", postcode: "3512 AD", city: "Utrecht", latitude: 52.0934, longitude: 5.1191, openingHours: "Vandaag open tot 23:00", active: true },
+  { id: "ah-neude", chainId: "albert-heijn", name: "Albert Heijn Neude", address: "Neude 7", postcode: "3512 AD", city: "Utrecht", latitude: 52.0934, longitude: 5.1191, openingHours: "Vandaag open tot 23:00", active: true },
   { id: "jumbo-merelstraat", chainId: "jumbo", name: "Jumbo Merelstraat", address: "Merelstraat 46", postcode: "3514 CN", city: "Utrecht", latitude: 52.1026, longitude: 5.1304, openingHours: "Vandaag open tot 22:00", active: true },
   { id: "lidl-smaragdplein", chainId: "lidl", name: "Lidl Smaragdplein", address: "Smaragdplein 103", postcode: "3523 EA", city: "Utrecht", latitude: 52.0772, longitude: 5.1365, openingHours: "Vandaag open tot 21:00", active: true },
   { id: "aldi-admiraal", chainId: "aldi", name: "Aldi Admiraal Helfrichlaan", address: "Admiraal Helfrichlaan 6", postcode: "3527 KV", city: "Utrecht", latitude: 52.0855, longitude: 5.0939, openingHours: "Vandaag open tot 20:00", active: true },
@@ -92,19 +92,19 @@ const demoOffer = (input: DemoOfferInput): Offer => {
 };
 
 export const demoOffers: Offer[] = [
-  demoOffer({ id: "ah-kip", productId: "ah-kipfilet", productName: "AH Kipfilet ca. 800 g", category: "Vlees", chainId: "ah", storeId: "ah-neude", regular: 899, action: 674, actionType: "percentage", discount: 25, houseBrand: true }),
+  demoOffer({ id: "ah-kip", productId: "ah-kipfilet", productName: "AH Kipfilet ca. 800 g", category: "Vlees", chainId: "albert-heijn", storeId: "ah-neude", regular: 899, action: 674, actionType: "percentage", discount: 25, houseBrand: true }),
   demoOffer({ id: "lidl-kip", productId: "lidl-kipfilet", productName: "Lidl Kipfilet 1 kg", category: "Vlees", chainId: "lidl", storeId: "lidl-smaragdplein", regular: 829, houseBrand: true }),
   demoOffer({ id: "jumbo-kip", productId: "jumbo-kipfilet", productName: "Jumbo Kipfilet 800 g", category: "Vlees", chainId: "jumbo", storeId: "jumbo-merelstraat", regular: 875, action: 699, actionType: "loyalty", houseBrand: true }),
-  demoOffer({ id: "ah-skyr", productId: "arla-skyr", productName: "Arla Skyr naturel 1 kg", brand: "Arla", category: "Zuivel", chainId: "ah", storeId: "ah-neude", regular: 398, actionType: "buy_one_get_one", minimum: 2 }),
+  demoOffer({ id: "ah-skyr", productId: "arla-skyr", productName: "Arla Skyr naturel 1 kg", brand: "Arla", category: "Zuivel", chainId: "albert-heijn", storeId: "ah-neude", regular: 398, actionType: "buy_one_get_one", minimum: 2 }),
   demoOffer({ id: "jumbo-skyr", productId: "jumbo-skyr", productName: "Jumbo Skyr naturel 1 kg", category: "Zuivel", chainId: "jumbo", storeId: "jumbo-merelstraat", regular: 229, houseBrand: true }),
   demoOffer({ id: "lidl-skyr", productId: "milbona-skyr", productName: "Milbona Skyr naturel 1 kg", brand: "Milbona", category: "Zuivel", chainId: "lidl", storeId: "lidl-smaragdplein", regular: 219, houseBrand: true }),
-  demoOffer({ id: "ah-pasta", productId: "ah-penne", productName: "AH Penne 500 g", category: "Pasta", chainId: "ah", storeId: "ah-neude", regular: 109, action: 180, actionType: "multibuy_fixed", minimum: 2, houseBrand: true }),
+  demoOffer({ id: "ah-pasta", productId: "ah-penne", productName: "AH Penne 500 g", category: "Pasta", chainId: "albert-heijn", storeId: "ah-neude", regular: 109, action: 180, actionType: "multibuy_fixed", minimum: 2, houseBrand: true }),
   demoOffer({ id: "lidl-pasta", productId: "lidl-penne", productName: "Combino Penne 500 g", category: "Pasta", chainId: "lidl", storeId: "lidl-smaragdplein", regular: 89, houseBrand: true }),
   demoOffer({ id: "plus-pasta", productId: "plus-penne", productName: "PLUS Penne 500 g", category: "Pasta", chainId: "plus", storeId: "plus-voorstraat", regular: 99, houseBrand: true }),
-  demoOffer({ id: "ah-eieren", productId: "ah-eieren", productName: "AH Scharreleieren M 10 stuks", category: "Eieren", chainId: "ah", storeId: "ah-neude", regular: 319, action: 255, actionType: "percentage", discount: 20, houseBrand: true }),
+  demoOffer({ id: "ah-eieren", productId: "ah-eieren", productName: "AH Scharreleieren M 10 stuks", category: "Eieren", chainId: "albert-heijn", storeId: "ah-neude", regular: 319, action: 255, actionType: "percentage", discount: 20, houseBrand: true }),
   demoOffer({ id: "aldi-eieren", productId: "aldi-eieren", productName: "Aldi Scharreleieren 10 stuks", category: "Eieren", chainId: "aldi", storeId: "aldi-admiraal", regular: 289, houseBrand: true }),
   demoOffer({ id: "jumbo-eieren", productId: "jumbo-eieren", productName: "Jumbo Scharreleieren 10 stuks", category: "Eieren", chainId: "jumbo", storeId: "jumbo-merelstraat", regular: 309, houseBrand: true }),
-  demoOffer({ id: "ah-hagel", productId: "deruijter-hagel", productName: "De Ruijter Chocoladehagel puur 390 g", brand: "De Ruijter", category: "Broodbeleg", chainId: "ah", storeId: "ah-neude", regular: 439, actionType: "second_half_price", minimum: 2 }),
+  demoOffer({ id: "ah-hagel", productId: "deruijter-hagel", productName: "De Ruijter Chocoladehagel puur 390 g", brand: "De Ruijter", category: "Broodbeleg", chainId: "albert-heijn", storeId: "ah-neude", regular: 439, actionType: "second_half_price", minimum: 2 }),
   demoOffer({ id: "jumbo-hagel", productId: "deruijter-hagel-j", productName: "De Ruijter Chocoladehagel puur 390 g", brand: "De Ruijter", category: "Broodbeleg", chainId: "jumbo", storeId: "jumbo-merelstraat", regular: 425 }),
   demoOffer({ id: "plus-hagel", productId: "deruijter-hagel-p", productName: "De Ruijter Hagelslag puur 390 g", brand: "De Ruijter", category: "Broodbeleg", chainId: "plus", storeId: "plus-voorstraat", regular: 429, action: 350, actionType: "loyalty" }),
   demoOffer({ id: "lidl-rijst", productId: "golden-sun-basmati", productName: "Golden Sun Basmati rijst 1 kg", category: "Rijst", chainId: "lidl", storeId: "lidl-smaragdplein", regular: 229, houseBrand: true }),
@@ -156,7 +156,7 @@ export const demoProfile = {
   radiusKm: 5,
   emailPreference: "summary" as const,
   maxStores: 2 as number | null,
-  enabledChainIds: ["ah", "jumbo", "lidl", "aldi", "plus", "dirk"],
+  enabledChainIds: ["albert-heijn", "jumbo", "lidl", "aldi", "plus", "dirk"],
   disabledStoreIds: [] as string[],
   onboardingCompleted: true,
   role: "admin" as const,

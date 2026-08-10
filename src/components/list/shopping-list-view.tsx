@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import { Check, CheckCircle2, CircleAlert, Minus, Plus, RotateCcw, ShoppingBasket, Store, Trash2, X } from "lucide-react";
 import { PageHeading } from "@/components/app/page-heading";
+import { DataAttribution } from "@/components/app/data-attribution";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { demoChains, demoShoppingOptions, demoStores } from "@/data/demo";
 import { optimizeShopping, type Strategy } from "@/domain/optimizer";
 import { formatEuro } from "@/config/site";
+import { localizeShoppingOptions } from "@/domain/market-data";
 
 const strategyLabels: Record<Strategy, string> = {
   cheapest: "Beste prijs",
@@ -19,18 +20,18 @@ const strategyLabels: Record<Strategy, string> = {
 };
 
 export function ShoppingListView() {
-  const { products, list, profile, updateListItem, removeFromList, clearList } = useAppState();
+  const { products, list, profile, chains, stores, shoppingOptions, dataSource, updateListItem, removeFromList, clearList } = useAppState();
   const [strategy, setStrategy] = useState<Strategy>("balance");
   const activeItems = list.filter((item) => !item.checked);
   const checkedItems = list.filter((item) => item.checked);
 
-  const adjustedOptions = useMemo(() => demoShoppingOptions
+  const adjustedOptions = useMemo(() => localizeShoppingOptions(shoppingOptions, stores, profile)
     .filter((option) => activeItems.some((item) => item.productId === option.productId))
     .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
     .map((option) => {
       const requested = activeItems.find((item) => item.productId === option.productId)?.quantity ?? 1;
       return { ...option, requestedQuantity: requested, priceCents: option.priceCents * Math.ceil(requested / option.payableQuantity) };
-    }), [activeItems, profile.enabledChainIds, profile.disabledStoreIds]);
+    }), [activeItems, profile, stores, shoppingOptions]);
 
   const plan = optimizeShopping({
     productIds: activeItems.map((item) => item.productId),
@@ -68,8 +69,9 @@ export function ShoppingListView() {
             </div>
 
             {storeIds.map((storeId, index) => {
-              const store = demoStores.find((item) => item.id === storeId)!;
-              const chain = demoChains.find((item) => item.id === store.chainId)!;
+              const store = stores.find((item) => item.id === storeId);
+              const chain = chains.find((item) => item.id === store?.chainId);
+              if (!store || !chain) return null;
               const options = plan.options.filter((option) => option.storeId === storeId);
               return <section key={storeId} className="border-b border-mandwijs-line last:border-0">
                 <div className="flex items-center gap-3 bg-[#f7faf8] px-4 py-4 sm:px-6">
@@ -99,7 +101,7 @@ export function ShoppingListView() {
 
         <aside className="space-y-4">
           <Card className="p-5 shadow-none"><h2 className="text-sm font-black">Hoeveelheden</h2><div className="mt-4 space-y-4">{activeItems.map((item) => { const product = products.find((entry) => entry.id === item.productId); return <div key={item.productId}><div className="mb-2 flex items-center justify-between gap-3"><span className="truncate text-xs font-bold">{product?.name}</span><button onClick={() => removeFromList(item.productId)} className="text-mandwijs-muted hover:text-[#a53b43]" aria-label="Verwijderen"><Trash2 className="size-3.5" /></button></div><div className="flex items-center rounded-xl border border-mandwijs-line bg-white"><button onClick={() => updateListItem(item.productId, { quantity: Math.max(1, item.quantity - 1) })} className="grid size-10 place-items-center" aria-label="Minder"><Minus className="size-4" /></button><span className="flex-1 text-center text-sm font-black">{item.quantity}</span><button onClick={() => updateListItem(item.productId, { quantity: item.quantity + 1 })} className="grid size-10 place-items-center" aria-label="Meer"><Plus className="size-4" /></button></div></div>; })}</div><ButtonLink href="/producten" variant="soft" className="mt-5 w-full"><Plus className="size-4" /> Product toevoegen</ButtonLink></Card>
-          <Card className="p-5 shadow-none"><h2 className="flex items-center gap-2 text-sm font-black"><Store className="size-4 text-mandwijs-primary" />Prijsuitleg</h2><p className="mt-3 text-xs leading-5 text-mandwijs-muted">Het totaal bevat verplichte actie-aantallen. De balansscore telt € 3,00 per extra winkel op om gemak mee te wegen; dat bedrag betaal je niet echt.</p></Card>
+          <Card className="p-5 shadow-none"><h2 className="flex items-center gap-2 text-sm font-black"><Store className="size-4 text-mandwijs-primary" />Prijsuitleg</h2><p className="mt-3 text-xs leading-5 text-mandwijs-muted">Het totaal bevat verplichte actie-aantallen. De balansscore telt € 3,00 per extra winkel op om gemak mee te wegen; dat bedrag betaal je niet echt.</p><DataAttribution source={dataSource} className="mt-3 inline-block text-xs text-mandwijs-deep" /></Card>
         </aside>
       </div>
     </>

@@ -2,7 +2,7 @@
 
 MandWijs is een mobile-first webapp voor Nederlandse consumenten die hun persoonlijke boodschappenlijst willen vergelijken op normale prijzen, aanbiedingen en het gewenste aantal winkelstops.
 
-De MVP is direct bruikbaar met transparante demo-data. Supabase, een externe prijsprovider en Resend zijn optionele productie-aansluitingen; ontbrekende credentials laten de app niet crashen.
+De MVP gebruikt desgewenst live PrijsProfeet-zoekdata en echte Supabase-accounts. Ontbreekt een endpoint, sleutel of migratie, dan blijft de app bruikbaar met een expliciet gemarkeerde demo-fallback.
 
 ## Wat werkt
 
@@ -19,6 +19,7 @@ De MVP is direct bruikbaar met transparante demo-data. Supabase, een externe pri
 - twee e-mailvarianten en een idempotente, beschermde maandagcron;
 - beschermde admininterface voor imports, matches, ketens, testmail en demo-reset;
 - Supabase-migration met indexes, constraints en Row Level Security.
+- type-safe PrijsProfeet-provider op basis van de officiële OpenAPI-specificatie.
 
 ## Snel starten
 
@@ -30,7 +31,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. Klik op **Bekijk de demo**, of registreer met een willekeurig geldig e-mailadres en een wachtwoord van minimaal acht tekens. Zolang Supabase niet is geconfigureerd gebruikt MandWijs een HTTP-only demo-sessie en localStorage voor niet-gevoelige demovoorkeuren.
+Open `http://localhost:3000`. Klik op **Bekijk de demo**, of registreer met een geldig e-mailadres en een wachtwoord van minimaal acht tekens. Met Supabase-configuratie worden accounts en persoonlijke data via RLS opgeslagen. Zonder Supabase gebruikt MandWijs een HTTP-only demosessie en localStorage.
 
 ## Commands
 
@@ -54,7 +55,7 @@ npx playwright install chromium
 
 ```text
 src/app               Next.js routes, Server Actions en Route Handlers
-src/components        toegankelijke, mobile-first UI en demo-state
+src/components        toegankelijke, mobile-first UI en centrale app-state
 src/domain            pure prijs-, match-, afstands- en optimalisatielogica
 src/providers         verwisselbare supermarktdata-providers
 src/emails            provider-onafhankelijke HTML-templates
@@ -72,9 +73,9 @@ Prijslogica, matching, Haversine-afstand en optimalisatie zijn pure services. Da
 | `NEXT_PUBLIC_SUPABASE_URL` | client/server | Supabase-project-URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client/server | publieke anon key, in combinatie met RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | alleen server | cron, imports en beheer; nooit naar de browser |
-| `PRICE_PROVIDER` | server | `demo` of later `prijsprofeet` |
-| `PRIJSPROFEET_API_KEY` | alleen server | externe providercredential |
-| `PRIJSPROFEET_BASE_URL` | alleen server | uitsluitend uit officiële documentatie |
+| `PRICE_PROVIDER` | server | `demo` of `prijsprofeet` |
+| `PRIJSPROFEET_API_KEY` | alleen server | optioneel voor zoeken, vereist voor gedocumenteerde Pro-endpoints |
+| `PRIJSPROFEET_BASE_URL` | alleen server | standaard `https://www.prijsprofeet.nl` |
 | `RESEND_API_KEY` | alleen server | echte e-mailverzending |
 | `RESEND_FROM_EMAIL` | alleen server | geverifieerde afzender |
 | `CRON_SECRET` | alleen server | Bearer-auth voor cronroutes |
@@ -85,9 +86,9 @@ Kopieer `.env.example` naar `.env.local`. Commit nooit `.env.local`, service-rol
 
 ## Supabase instellen
 
-1. Maak een Supabase-project en kopieer de project-URL en anon key naar `.env.local`.
+1. Kopieer de Supabase-project-URL en anon key naar `.env.local`.
 2. Installeer de Supabase CLI en koppel het project: `supabase link --project-ref <ref>`.
-3. Voer `supabase db push` uit. Lokaal kan `supabase db reset` de migration plus seed draaien.
+3. Voer `supabase db push` uit. Dit draait zowel de initiële schema-migratie als de backfill voor accounts die al bestonden. Voer daarna desgewenst `supabase db seed` uit. Zonder CLI kun je de SQL-bestanden uit `supabase/migrations` in oplopende volgorde in de Supabase SQL Editor uitvoeren, gevolgd door `supabase/seed.sql`.
 4. Voeg in Supabase Auth de lokale en productie redirect-URL's toe:
    - `http://localhost:3000/auth/callback`
    - `https://jouw-domein.nl/auth/callback`
@@ -95,6 +96,23 @@ Kopieer `.env.example` naar `.env.local`. Commit nooit `.env.local`, service-rol
 6. Maak de eerste admin bewust via SQL: `update public.profiles set role = 'admin' where id = '<auth-user-uuid>';`.
 
 RLS zorgt ervoor dat gebruikers alleen hun eigen profiel, producten, voorkeuren en lijsten zien. Ingelogde gebruikers mogen globale winkel- en prijsdata lezen; alleen admins mogen die aanpassen. Server Actions leiden `user_id` altijd af uit de sessie.
+
+## PrijsProfeet instellen
+
+Zet voor live prijsdata in `.env.local`:
+
+```dotenv
+PRICE_PROVIDER=prijsprofeet
+PRIJSPROFEET_BASE_URL=https://www.prijsprofeet.nl
+PRIJSPROFEET_TIER=free
+PRIJSPROFEET_API_KEY=jouw_gratis_key
+```
+
+De publieke zoek- en filterendpoints werken ook zonder key. Een gratis key verhoogt de eigen requestlimiet en laat MandWijs maximaal twaalf relevante zoekhits per synchronisatie opnieuw controleren via `GET /api/v1/products/{id}`. De key wordt uitsluitend server-side als `X-API-Key` verstuurd. Zet `PRIJSPROFEET_TIER` alleen op `pro` wanneer de key werkelijk een Pro-abonnement heeft; uitsluitend dan gebruikt de provider `/match/*`. De app vraagt alleen actieve promoties op en filtert verlopen of toekomstige aanbiedingen defensief weg. Omdat de OpenAPI-specificatie voor matchresponses geen concrete velden definieert, worden die resultaten niet blind gemapt. Alleen een exacte EAN of provider-ID geldt als exacte match; naam-/merkmatches zijn indicatief.
+
+Op schermen met live prijsdata staat een klikbare bronvermelding naar PrijsProfeet. Bewaar providerdata niet langer dan de door PrijsProfeet toegestane cacheperiode.
+
+PrijsProfeet documenteert geen filiaalendpoint. MandWijs toont daarom landelijke ketenprijzen en gebruikt transparant gemarkeerde interne filialen voor de winkelstrategie. Bij een ontbrekende key, endpointfout of ongeldige response schakelt de provider terug naar demo-data en toont de UI die status.
 
 ## E-mail en cron
 
@@ -128,17 +146,17 @@ Voor echte verzending:
 
 ## Bekende beperkingen
 
-- De huidige schermdata komt uit `DemoDataProvider`; ze is geen actuele supermarktprijs.
-- PrijsProfeet is niet geïmplementeerd zonder officiële documentatie en gebruiksvoorwaarden.
+- PrijsProfeet-zoekdata is live, maar de provider documenteert geen fysieke filialen. Het winkelplan gebruikt alleen bekende filialen die werkelijk binnen de radius vallen; buiten de huidige interne filialendekking worden daarom geen locaties verzonnen.
+- De concrete responsevelden van `/match/*` zijn niet gedocumenteerd en worden bewust niet als betrouwbare productdata gemapt.
 - De cron bevat de veilige verzendgrens, maar de live optimizerquery moet bij aansluiting op Supabase worden ingevuld.
-- Browserlocatie wordt in demo-modus niet reverse-geocodeerd; handmatige invoer gebruikt Utrecht als demo-coördinaat.
+- Browserlocatie wordt niet reverse-geocodeerd; een handmatig ingevulde plaats krijgt zonder geocoder geen verzonnen coördinaten.
 - Er is nog geen voorraadcontrole, reiskostenberekening of routeoptimalisatie.
 - Prijsvergelijking is primair per stuk; genormaliseerde kg/liter/100g-prijzen staan op de roadmap.
 
 ## Wat moet later nog worden gebouwd?
 
-- officiële PrijsProfeet-mapping na controle van endpoints, rate limits en licentie;
-- Supabase-repository voor live CRUD in plaats van de lokale demo-store;
+- persistente, periodieke PrijsProfeet-import voor globale prijshistorie en adminrapportage;
+- providerondersteuning voor filialen zodra daar een gedocumenteerd endpoint voor bestaat;
 - server-side geocoding met privacyvriendelijke opslag;
 - volledige weekmailquery en ondertekende one-click unsubscribe;
 - handmatige admin-matchcorrectie als persistente mutatie;
@@ -148,8 +166,9 @@ Voor echte verzending:
 
 ## Menselijke input die nog nodig is
 
-- Supabase project-URL, anon key en server-side service-role key;
+- het uitvoeren van de meegeleverde migraties en seed in het gekoppelde Supabase-project;
+- een server-side service-role key voor geplande globale imports en beheer (niet nodig voor normale account-CRUD);
 - Google OAuth clientconfiguratie;
-- officiële PrijsProfeet-documentatie, API-key en toestemming voor het beoogde gebruik;
+- een PrijsProfeet Pro-key wanneer EAN-match- of prijshistorie-endpoints worden geactiveerd;
 - Resend API-key en geverifieerd afzenderdomein;
 - definitieve productie-URL en keuze voor het privacybeleid.

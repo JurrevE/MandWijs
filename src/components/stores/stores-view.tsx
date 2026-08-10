@@ -8,20 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { siteConfig } from "@/config/site";
-import { demoChains, demoStores } from "@/data/demo";
 import { haversineDistanceKm, isWithinRadius } from "@/domain/distance";
 
 export function StoresView() {
-  const { profile, updateProfile, toggleChain, toggleStore } = useAppState();
+  const { profile, chains, stores: allStores, mode, updateProfile, toggleChain, toggleStore } = useAppState();
   const [manualLocation, setManualLocation] = useState(profile.locationLabel);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
-  const stores = useMemo(() => demoStores
-    .filter((store) => isWithinRadius({ latitude: profile.latitude, longitude: profile.longitude }, store, profile.radiusKm))
-    .map((store) => ({ ...store, distance: haversineDistanceKm({ latitude: profile.latitude, longitude: profile.longitude }, { latitude: store.latitude!, longitude: store.longitude! }) }))
+  const stores = useMemo(() => {
+    if (profile.latitude == null || profile.longitude == null) return [];
+    const origin = { latitude: profile.latitude, longitude: profile.longitude };
+    return allStores
+    .filter((store) => store.latitude != null && store.longitude != null)
+    .filter((store) => isWithinRadius(origin, store, profile.radiusKm))
+    .map((store) => ({ ...store, distance: haversineDistanceKm(origin, { latitude: store.latitude!, longitude: store.longitude! }) }))
     .filter((store) => `${store.name} ${store.address}`.toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => a.distance - b.distance), [profile.latitude, profile.longitude, profile.radiusKm, query]);
+    .sort((a, b) => a.distance - b.distance);
+  }, [allStores, profile.latitude, profile.longitude, profile.radiusKm, query]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -42,9 +46,12 @@ export function StoresView() {
 
   const saveManual = () => {
     if (!manualLocation.trim()) return;
-    // Demo-geocoding blijft bewust op Utrecht gecentreerd; echte geocoding hoort server-side.
-    updateProfile({ locationLabel: manualLocation.trim(), latitude: 52.0907, longitude: 5.1214 });
-    setLocationStatus("Locatie opgeslagen. In demo-modus gebruiken we het centrum van Utrecht als coördinaat.");
+    updateProfile(mode === "demo"
+      ? { locationLabel: manualLocation.trim(), latitude: 52.0907, longitude: 5.1214 }
+      : { locationLabel: manualLocation.trim(), latitude: null, longitude: null });
+    setLocationStatus(mode === "demo"
+      ? "Locatie opgeslagen. In demo-modus gebruiken we het centrum van Utrecht als coördinaat."
+      : "Plaats opgeslagen. Gebruik browserlocatie om ook op afstand te filteren.");
   };
 
   return (
@@ -54,7 +61,7 @@ export function StoresView() {
         <aside className="space-y-5">
           <Card className="p-5 shadow-none">
             <h2 className="flex items-center gap-2 font-black"><MapPin className="size-5 text-mandwijs-primary" /> Actieve locatie</h2>
-            <p className="mt-2 text-xs leading-5 text-mandwijs-muted">Een plaats of postcode is genoeg. Een exacte locatie is niet verplicht.</p>
+            <p className="mt-2 text-xs leading-5 text-mandwijs-muted">Gebruik browserlocatie voor een echte afstandsfilter. Een handmatige plaats wordt alleen als locatielabel opgeslagen.</p>
             <Button onClick={requestLocation} variant="soft" className="mt-5 w-full"><LocateFixed className="size-4" /> Gebruik browserlocatie</Button>
             <div className="my-4 flex items-center gap-3 text-[.65rem] font-bold uppercase tracking-widest text-mandwijs-muted before:h-px before:flex-1 before:bg-mandwijs-line after:h-px after:flex-1 after:bg-mandwijs-line">of</div>
             <label className="block text-xs font-bold">Plaats, postcode of adres<input value={manualLocation} onChange={(event) => setManualLocation(event.target.value)} className="input-field mt-2" /></label>
@@ -70,16 +77,17 @@ export function StoresView() {
 
           <Card className="p-5 shadow-none">
             <div className="flex items-center justify-between"><h2 className="font-black">Supermarktketens</h2><Badge tone="neutral">{profile.enabledChainIds.length} actief</Badge></div>
-            <div className="mt-4 space-y-1">{demoChains.map((chain) => { const enabled = profile.enabledChainIds.includes(chain.id); return <button key={chain.id} onClick={() => toggleChain(chain.id)} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-left hover:bg-[#f3f7f5]"><span className="grid size-8 place-items-center rounded-lg text-[.65rem] font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span><span className="flex-1 text-sm font-bold">{chain.name}</span><span className={`grid size-6 place-items-center rounded-lg border ${enabled ? "border-mandwijs-primary bg-mandwijs-primary text-white" : "border-[#b9c6c1] text-transparent"}`}><Check className="size-4" /></span></button>; })}</div>
+            <div className="mt-4 space-y-1">{chains.map((chain) => { const enabled = profile.enabledChainIds.includes(chain.id); return <button key={chain.id} onClick={() => toggleChain(chain.id)} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-left hover:bg-[#f3f7f5]"><span className="grid size-8 place-items-center rounded-lg text-[.65rem] font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span><span className="flex-1 text-sm font-bold">{chain.name}</span><span className={`grid size-6 place-items-center rounded-lg border ${enabled ? "border-mandwijs-primary bg-mandwijs-primary text-white" : "border-[#b9c6c1] text-transparent"}`}><Check className="size-4" /></span></button>; })}</div>
           </Card>
         </aside>
 
         <Card className="overflow-hidden shadow-none">
           <div className="border-b border-mandwijs-line p-4 sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-black">Filialen binnen {profile.radiusKm} km</h2><p className="mt-1 text-xs text-mandwijs-muted">{stores.length} fysieke winkels gevonden rond {profile.locationLabel}</p></div><label className="relative sm:w-64"><Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="input-field pl-10" placeholder="Zoek een filiaal" /></label></div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-black">Filialen binnen {profile.radiusKm} km</h2><p className="mt-1 text-xs text-mandwijs-muted">{stores.length} fysieke winkels gevonden rond {profile.locationLabel}</p></div><label className="relative sm:w-64"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="input-field input-field-with-icon" placeholder="Zoek een filiaal" /></label></div>
           </div>
-          {stores.length === 0 ? <div className="grid place-items-center px-5 py-20 text-center"><StoreIcon className="size-10 text-mandwijs-muted" /><h3 className="mt-4 font-black">Geen filialen in deze radius</h3><p className="mt-1 text-sm text-mandwijs-muted">Vergroot je radius of pas je locatie aan.</p></div> : <div className="divide-y divide-mandwijs-line">{stores.map((store) => {
-            const chain = demoChains.find((item) => item.id === store.chainId)!;
+          {stores.length === 0 ? <div className="grid place-items-center px-5 py-20 text-center"><StoreIcon className="size-10 text-mandwijs-muted" /><h3 className="mt-4 font-black">Geen geverifieerde filialen in deze radius</h3><p className="mt-1 max-w-md text-sm leading-6 text-mandwijs-muted">We tonen geen landelijke prijs alsof die winkel bij jou om de hoek zit. Gebruik browserlocatie of vergroot je radius.</p></div> : <div className="divide-y divide-mandwijs-line">{stores.map((store) => {
+            const chain = chains.find((item) => item.id === store.chainId);
+            if (!chain) return null;
             const chainEnabled = profile.enabledChainIds.includes(chain.id);
             const enabled = chainEnabled && !profile.disabledStoreIds.includes(store.id);
             return <article key={store.id} className={`flex items-center gap-3 p-4 sm:p-5 ${!enabled ? "bg-[#fafbfb] opacity-60" : ""}`}>

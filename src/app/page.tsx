@@ -157,7 +157,7 @@ export default function LandingPage() {
       <section className="px-5 pb-8 sm:px-8">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-mandwijs-deep px-6 py-14 text-center text-white sm:px-12 sm:py-20">
           <h2 className="mx-auto max-w-2xl text-balance text-3xl font-black tracking-[-.045em] sm:text-5xl">Klaar om je boodschappen slimmer te plannen?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-white/65">Start met demo-data. Koppel later pas je echte account en voorkeuren.</p>
+          <p className="mx-auto mt-4 max-w-xl text-white/65">Maak een echt account of ontdek eerst de demo. Live prijsdata valt automatisch veilig terug als de provider niet bereikbaar is.</p>
           <ButtonLink href="/register" variant="soft" className="mt-8 min-h-14 px-7 text-base">Gratis beginnen <ArrowRight className="size-5" /></ButtonLink>
         </div>
       </section>

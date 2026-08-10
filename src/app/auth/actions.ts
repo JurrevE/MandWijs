@@ -26,6 +26,11 @@ async function setDemoSession(email: string) {
   });
 }
 
+async function clearDemoSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete("mandwijs_demo_session");
+}
+
 export async function loginAction(formData: FormData) {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(messageUrl("/login", "error", parsed.error.issues[0].message));
@@ -38,6 +43,7 @@ export async function loginAction(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect(messageUrl("/login", "error", "E-mailadres of wachtwoord klopt niet."));
+  await clearDemoSession();
   redirect("/dashboard");
 }
 
@@ -51,7 +57,7 @@ export async function signupAction(formData: FormData) {
     redirect("/onboarding");
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -60,6 +66,8 @@ export async function signupAction(formData: FormData) {
     },
   });
   if (error) redirect(messageUrl("/register", "error", error.message));
+  await clearDemoSession();
+  if (data.session) redirect("/onboarding");
   redirect(messageUrl("/login", "message", "Controleer je inbox om je account te bevestigen."));
 }
 
@@ -68,9 +76,26 @@ export async function requestPasswordResetAction(formData: FormData) {
   if (!parsed.success) redirect(messageUrl("/forgot-password", "error", "Vul een geldig e-mailadres in."));
   const supabase = await createSupabaseServerClient();
   if (supabase) {
-    await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${appUrl}/auth/callback?next=/instellingen` });
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${appUrl}/auth/callback?next=/update-password` });
   }
   redirect(messageUrl("/forgot-password", "message", "Als het account bestaat, ontvang je zo een e-mail."));
+}
+
+export async function updatePasswordAction(formData: FormData) {
+  const parsed = z.object({
+    password: z.string().min(8, "Gebruik minimaal 8 tekens."),
+    confirmation: z.string(),
+  }).refine((value) => value.password === value.confirmation, {
+    message: "De wachtwoorden komen niet overeen.",
+    path: ["confirmation"],
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect(messageUrl("/update-password", "error", parsed.error.issues[0].message));
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) redirect(messageUrl("/update-password", "error", "Supabase is niet geconfigureerd."));
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) redirect(messageUrl("/update-password", "error", "Het wachtwoord kon niet worden gewijzigd. Vraag een nieuwe link aan."));
+  redirect(messageUrl("/login", "message", "Je wachtwoord is gewijzigd. Je kunt nu inloggen."));
 }
 
 export async function googleLoginAction() {
@@ -84,13 +109,13 @@ export async function googleLoginAction() {
     options: { redirectTo: `${appUrl}/auth/callback?next=/dashboard` },
   });
   if (error || !data.url) redirect(messageUrl("/login", "error", "Google-inloggen kon niet worden gestart."));
+  await clearDemoSession();
   redirect(data.url);
 }
 
 export async function logoutAction() {
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();
-  const cookieStore = await cookies();
-  cookieStore.delete("mandwijs_demo_session");
+  await clearDemoSession();
   redirect("/");
 }

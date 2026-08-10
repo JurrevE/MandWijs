@@ -1,35 +1,21 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { demoProducts, demoProfile } from "@/data/demo";
+import {
+  clearListAction,
+  deleteListItemAction,
+  deleteProductAction,
+  persistChainPreferenceAction,
+  persistListItemAction,
+  persistProductAction,
+  persistProfileAction,
+  persistStorePreferenceAction,
+} from "@/app/state-actions";
+import { createDemoState } from "@/data/initial-state";
+import type { AppProfile, GroceryListItem, PersistedState } from "@/domain/app-state";
+import { addNationalPriceLocations, buildShoppingOptions } from "@/domain/market-data";
 import type { PersonalProduct } from "@/domain/types";
-import type { EmailPreference } from "@/domain/email";
-
-export interface GroceryListItem {
-  productId: string;
-  quantity: number;
-  note?: string;
-  checked: boolean;
-}
-
-interface AppProfile {
-  name: string;
-  locationLabel: string;
-  latitude: number;
-  longitude: number;
-  radiusKm: number;
-  emailPreference: EmailPreference;
-  maxStores: number | null;
-  enabledChainIds: string[];
-  disabledStoreIds: string[];
-  onboardingCompleted: boolean;
-}
-
-interface PersistedState {
-  products: PersonalProduct[];
-  list: GroceryListItem[];
-  profile: AppProfile;
-}
+import type { ProviderSyncResult } from "@/providers/supermarket-data-provider";
 
 interface AppStateValue extends PersistedState {
   addProduct: (product: Omit<PersonalProduct, "id">) => string;
@@ -43,101 +29,199 @@ interface AppStateValue extends PersistedState {
   toggleChain: (chainId: string) => void;
   toggleStore: (storeId: string) => void;
   resetDemo: () => void;
+  refreshMarketData: () => void;
 }
 
-const initialState: PersistedState = {
-  products: demoProducts,
-  list: demoProducts.filter((product) => product.active).map((product) => ({ productId: product.id, quantity: 1, checked: false })),
-  profile: demoProfile,
-};
-
 const AppStateContext = createContext<AppStateValue | null>(null);
-const storageKey = "mandwijs-demo-state-v1";
+const storageKey = "mandwijs-demo-state-v2";
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
+type ActionResult = { ok: true } | { ok: false; error: string };
+
+export function AppStateProvider({ children, initialState }: { children: React.ReactNode; initialState: PersistedState }) {
   const [state, setState] = useState<PersistedState>(initialState);
   const stateRef = useRef(state);
+  const persistenceQueue = useRef(Promise.resolve());
+  const [marketRefresh, setMarketRefresh] = useState(0);
 
   useEffect(() => {
+    if (initialState.mode !== "demo") return;
     try {
       const stored = window.localStorage.getItem(storageKey);
-      if (stored) {
-        const restored = JSON.parse(stored) as PersistedState;
-        queueMicrotask(() => {
-          stateRef.current = restored;
-          setState(restored);
-        });
-      }
+      if (!stored) return;
+      const restored = JSON.parse(stored) as Pick<PersistedState, "products" | "list" | "profile">;
+      const next = { ...initialState, ...restored };
+      stateRef.current = next;
+      queueMicrotask(() => setState(next));
     } catch {
       // Ongeldige lokale demo-data mag de app nooit blokkeren.
     }
-  }, []);
+  }, [initialState]);
 
   const updateState = useCallback((updater: (current: PersistedState) => PersistedState) => {
     const next = updater(stateRef.current);
     stateRef.current = next;
     setState(next);
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(next));
-    } catch {
-      // Private browsing of een volle opslag blijft een bruikbare sessie opleveren.
+    if (next.mode === "demo") {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify({ products: next.products, list: next.list, profile: next.profile }));
+      } catch {
+        // Private browsing of een volle opslag blijft een bruikbare sessie opleveren.
+      }
     }
   }, []);
 
+  const queuePersistence = useCallback((action: () => Promise<ActionResult>) => {
+    if (stateRef.current.mode !== "supabase" || !stateRef.current.databaseReady) return;
+    persistenceQueue.current = persistenceQueue.current
+      .then(action)
+      .then((result) => {
+        if (!result.ok) throw new Error(result.error);
+        if (stateRef.current.persistenceError) {
+          const next = { ...stateRef.current, persistenceError: undefined };
+          stateRef.current = next;
+          setState(next);
+        }
+      })
+      .catch((error) => {
+        const next = { ...stateRef.current, persistenceError: error instanceof Error ? error.message : "Opslaan is mislukt." };
+        stateRef.current = next;
+        setState(next);
+      });
+  }, []);
+
   const addProduct = useCallback((product: Omit<PersonalProduct, "id">) => {
-    const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `product-${Date.now()}`;
-    updateState((current) => ({ ...current, products: [...current.products, { ...product, id }] }));
+    const id = crypto.randomUUID();
+    const created = { ...product, id };
+    updateState((current) => ({ ...current, products: [...current.products, created] }));
+    queuePersistence(() => persistProductAction(created));
     return id;
-  }, [updateState]);
+  }, [queuePersistence, updateState]);
 
   const updateProduct = useCallback((id: string, patch: Partial<PersonalProduct>) => {
-    updateState((current) => ({ ...current, products: current.products.map((product) => product.id === id ? { ...product, ...patch, id } : product) }));
-  }, [updateState]);
+    const currentProduct = stateRef.current.products.find((product) => product.id === id);
+    if (!currentProduct) return;
+    const updated = { ...currentProduct, ...patch, id };
+    updateState((current) => ({ ...current, products: current.products.map((product) => product.id === id ? updated : product) }));
+    queuePersistence(() => persistProductAction(updated));
+  }, [queuePersistence, updateState]);
 
   const deleteProduct = useCallback((id: string) => {
-    updateState((current) => ({ ...current, products: current.products.filter((product) => product.id !== id), list: current.list.filter((item) => item.productId !== id) }));
-  }, [updateState]);
+    updateState((current) => ({
+      ...current,
+      products: current.products.filter((product) => product.id !== id),
+      list: current.list.filter((item) => item.productId !== id),
+    }));
+    queuePersistence(() => deleteProductAction(id));
+  }, [queuePersistence, updateState]);
 
   const addToList = useCallback((productId: string) => {
-    updateState((current) => current.list.some((item) => item.productId === productId) ? current : { ...current, list: [...current.list, { productId, quantity: 1, checked: false }] });
-  }, [updateState]);
+    if (stateRef.current.list.some((item) => item.productId === productId)) return;
+    const item = { productId, quantity: 1, checked: false };
+    updateState((current) => ({ ...current, list: [...current.list, item] }));
+    queuePersistence(() => persistListItemAction(item));
+  }, [queuePersistence, updateState]);
 
   const updateListItem = useCallback((productId: string, patch: Partial<GroceryListItem>) => {
-    updateState((current) => ({ ...current, list: current.list.map((item) => item.productId === productId ? { ...item, ...patch, productId } : item) }));
-  }, [updateState]);
+    const currentItem = stateRef.current.list.find((item) => item.productId === productId);
+    if (!currentItem) return;
+    const updated = { ...currentItem, ...patch, productId };
+    updateState((current) => ({ ...current, list: current.list.map((item) => item.productId === productId ? updated : item) }));
+    queuePersistence(() => persistListItemAction(updated));
+  }, [queuePersistence, updateState]);
 
   const removeFromList = useCallback((productId: string) => {
     updateState((current) => ({ ...current, list: current.list.filter((item) => item.productId !== productId) }));
-  }, [updateState]);
+    queuePersistence(() => deleteListItemAction(productId));
+  }, [queuePersistence, updateState]);
 
-  const clearList = useCallback(() => updateState((current) => ({ ...current, list: [] })), [updateState]);
-  const updateProfile = useCallback((patch: Partial<AppProfile>) => updateState((current) => ({ ...current, profile: { ...current.profile, ...patch } })), [updateState]);
+  const clearList = useCallback(() => {
+    updateState((current) => ({ ...current, list: [] }));
+    queuePersistence(clearListAction);
+  }, [queuePersistence, updateState]);
 
-  const toggleChain = useCallback((chainId: string) => updateState((current) => ({
-    ...current,
-    profile: {
-      ...current.profile,
-      enabledChainIds: current.profile.enabledChainIds.includes(chainId)
-        ? current.profile.enabledChainIds.filter((id) => id !== chainId)
-        : [...current.profile.enabledChainIds, chainId],
-    },
-  })), [updateState]);
+  const updateProfile = useCallback((patch: Partial<AppProfile>) => {
+    updateState((current) => ({ ...current, profile: { ...current.profile, ...patch } }));
+    const { enabledChainIds: _enabledChainIds, disabledStoreIds: _disabledStoreIds, ...persistable } = patch;
+    void _enabledChainIds;
+    void _disabledStoreIds;
+    if (Object.keys(persistable).length) queuePersistence(() => persistProfileAction(persistable));
+  }, [queuePersistence, updateState]);
 
-  const toggleStore = useCallback((storeId: string) => updateState((current) => ({
-    ...current,
-    profile: {
-      ...current.profile,
-      disabledStoreIds: current.profile.disabledStoreIds.includes(storeId)
-        ? current.profile.disabledStoreIds.filter((id) => id !== storeId)
-        : [...current.profile.disabledStoreIds, storeId],
-    },
-  })), [updateState]);
+  const toggleChain = useCallback((chainId: string) => {
+    const enabled = !stateRef.current.profile.enabledChainIds.includes(chainId);
+    updateState((current) => ({
+      ...current,
+      profile: {
+        ...current.profile,
+        enabledChainIds: enabled
+          ? [...current.profile.enabledChainIds, chainId]
+          : current.profile.enabledChainIds.filter((id) => id !== chainId),
+      },
+    }));
+    queuePersistence(() => persistChainPreferenceAction(chainId, enabled));
+  }, [queuePersistence, updateState]);
+
+  const toggleStore = useCallback((storeId: string) => {
+    const enabled = stateRef.current.profile.disabledStoreIds.includes(storeId);
+    updateState((current) => ({
+      ...current,
+      profile: {
+        ...current.profile,
+        disabledStoreIds: enabled
+          ? current.profile.disabledStoreIds.filter((id) => id !== storeId)
+          : [...current.profile.disabledStoreIds, storeId],
+      },
+    }));
+    queuePersistence(() => persistStorePreferenceAction(storeId, enabled));
+  }, [queuePersistence, updateState]);
 
   const resetDemo = useCallback(() => {
-    stateRef.current = structuredClone(initialState);
-    setState(stateRef.current);
+    if (stateRef.current.mode !== "demo") return;
+    const next = createDemoState(stateRef.current.userEmail);
+    stateRef.current = next;
+    setState(next);
     window.localStorage.removeItem(storageKey);
+    setMarketRefresh((value) => value + 1);
   }, []);
+
+  const refreshMarketData = useCallback(() => setMarketRefresh((value) => value + 1), []);
+  const queryKey = useMemo(() => state.products.filter((product) => product.active).map((product) => product.searchTerm).sort().join("\u0000"), [state.products]);
+
+  useEffect(() => {
+    const queries = queryKey.split("\u0000").filter(Boolean);
+    if (!queries.length) {
+      updateState((current) => ({ ...current, offers: [], shoppingOptions: [] }));
+      return;
+    }
+    const controller = new AbortController();
+    void fetch("/api/offers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ queries }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Prijsdata kon niet worden geladen.");
+        return response.json() as Promise<ProviderSyncResult>;
+      })
+      .then((result) => updateState((current) => ({
+        ...current,
+        offers: result.offers,
+        shoppingOptions: buildShoppingOptions(current.products, result.offers, current.chains),
+        stores: addNationalPriceLocations(current.chains, current.stores),
+        dataSource: result.source,
+        dataUpdatedAt: result.completedAt,
+        dataWarnings: result.warnings,
+      })))
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        updateState((current) => ({
+          ...current,
+          dataWarnings: [error instanceof Error ? error.message : "Prijsdata kon niet worden geladen."],
+        }));
+      });
+    return () => controller.abort();
+  }, [marketRefresh, queryKey, updateState]);
 
   const value = useMemo<AppStateValue>(() => ({
     ...state,
@@ -152,7 +236,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     toggleChain,
     toggleStore,
     resetDemo,
-  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, toggleChain, toggleStore, resetDemo]);
+    refreshMarketData,
+  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, toggleChain, toggleStore, resetDemo, refreshMarketData]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

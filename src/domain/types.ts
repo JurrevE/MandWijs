@@ -25,6 +25,8 @@ export interface PersonalProduct {
   category: string;
   active: boolean;
   notes?: string;
+  expectedEan?: string;
+  expectedSourceProductId?: string;
 }
 
 export interface SupermarketChain {

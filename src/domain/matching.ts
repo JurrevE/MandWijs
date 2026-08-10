@@ -46,16 +46,28 @@ export function matchProduct(input: MatchInput): ProductMatch {
   const nameMatches = hasAllWords(own.searchTerm || own.name, candidate.name);
 
   if (own.kind === "exact" && brandMatches && nameMatches && amountMatches && !candidate.isHouseBrand) {
-    return { ...base, matchType: "exact", confidence: 0.92, reason: "Merk, naam en hoeveelheid komen overeen" };
+    return {
+      ...base,
+      matchType: "comparable",
+      confidence: 0.82,
+      reason: "Indicatieve naam-, merk- en hoeveelheidsmatch zonder EAN-bevestiging",
+    };
   }
 
-  const categoryMatches = normalize(candidate.category) === normalize(own.category) || hasAllWords(own.searchTerm, candidate.name);
-  if (categoryMatches && candidate.isHouseBrand && own.allowHouseBrand) {
+  const categoryMatches = normalize(candidate.category) === normalize(own.category);
+  if (nameMatches && categoryMatches && candidate.isHouseBrand && own.allowHouseBrand) {
     return { ...base, matchType: "house_brand", confidence: 0.72, reason: "Toegestaan huismerk-alternatief binnen dezelfde categorie" };
   }
 
-  if (categoryMatches && own.kind === "category") {
-    return { ...base, matchType: "comparable", confidence: 0.78, reason: "Vergelijkbaar product binnen de gevraagde categorie" };
+  if (nameMatches && own.kind === "category") {
+    return {
+      ...base,
+      matchType: "comparable",
+      confidence: categoryMatches ? 0.78 : 0.68,
+      reason: categoryMatches
+        ? "Indicatieve naam-match binnen de gevraagde categorie"
+        : "Indicatieve naam-match zonder EAN-bevestiging",
+    };
   }
 
   return {

@@ -30,11 +30,11 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
 
           <form action={action} className="mt-7 space-y-4">
             {mode === "register" && (
-              <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="name" autoComplete="name" className="input-field pl-10" placeholder="Bijvoorbeeld Sanne" /></span></label>
+              <label className="block text-sm font-bold">Naam<span className="relative mt-2 block"><UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="name" autoComplete="name" className="input-field input-field-with-icon" placeholder="Bijvoorbeeld Sanne" /></span></label>
             )}
-            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" className="input-field pl-10" placeholder="jij@voorbeeld.nl" /></span></label>
+            <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" className="input-field input-field-with-icon" placeholder="jij@voorbeeld.nl" /></span></label>
             {mode !== "forgot" && (
-              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} className="input-field pl-10" placeholder="Minimaal 8 tekens" /></span></label>
+              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} className="input-field input-field-with-icon" placeholder="Minimaal 8 tekens" /></span></label>
             )}
             {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-bold text-mandwijs-deep hover:underline">Wachtwoord vergeten?</Link></div>}
             <Button type="submit" className="min-h-13 w-full text-base">{copy.submit}</Button>

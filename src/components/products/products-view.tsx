@@ -75,7 +75,7 @@ export function ProductsView() {
       <PageHeading eyebrow="Persoonlijk assortiment" title="Mijn producten" description="Beheer wat je volgt. MandWijs gebruikt je voorkeuren voor de prijsvergelijking." actions={<Button onClick={() => setEditing("new")}><Plus className="size-4" /> Product toevoegen</Button>} />
       <Card className="overflow-hidden shadow-none">
         <div className="flex flex-col gap-3 border-b border-mandwijs-line p-4 sm:flex-row sm:items-center sm:justify-between">
-          <label className="relative block sm:max-w-sm sm:flex-1"><Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="input-field pl-10" placeholder="Zoek producten of categorieën" /></label>
+          <label className="relative block sm:max-w-sm sm:flex-1"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="input-field input-field-with-icon" placeholder="Zoek producten of categorieën" /></label>
           <div className="flex rounded-xl bg-[#edf2f0] p-1">{(["all", "active", "paused"] as const).map((value) => <button key={value} onClick={() => setFilter(value)} className={`min-h-9 rounded-lg px-3 text-xs font-bold ${filter === value ? "bg-white text-mandwijs-text shadow-sm" : "text-mandwijs-muted"}`}>{value === "all" ? "Alle" : value === "active" ? "Actief" : "Gepauzeerd"}</button>)}</div>
         </div>
         {filtered.length === 0 ? (

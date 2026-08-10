@@ -5,7 +5,7 @@
 - De GitHub-repository was bij aanvang leeg en bevatte geen commits.
 - De applicatie wordt mobile-first gebouwd met Next.js App Router, TypeScript en Tailwind CSS.
 - Zonder externe credentials draait MandWijs volledig met deterministische demo-data.
-- Supabase, Resend en de externe prijsprovider worden via server-only environment variables aangesloten.
+- Supabase, Resend en de externe prijsprovider worden via environment variables aangesloten; geheime keys blijven server-only.
 
 ## Fasering
 
@@ -29,8 +29,8 @@
 
 ## Risico's en mitigaties
 
-- **PrijsProfeet:** endpoints en voorwaarden zijn niet publiek bevestigd. De adapter bevat daarom geen verzonnen endpoint of responsevelden en blijft uitgeschakeld tot documentatie beschikbaar is.
-- **Supabase:** project-URL en keys ontbreken nog. Migrations, RLS en configuratie worden wel volledig meegeleverd; demo-modus blijft bruikbaar.
+- **PrijsProfeet:** de officiële OpenAPI-specificatie is geïmplementeerd met runtimevalidatie. Onduidelijk gespecificeerde matchresponses worden niet blind gemapt en filiaaldata valt terug op transparant gemarkeerde interne data.
+- **Supabase:** auth en persoonlijke CRUD gebruiken de gebruikerssessie en RLS. Migrations en accountbackfill worden meegeleverd; demo-modus blijft beschikbaar als het externe schema nog niet is uitgerold.
 - **E-mail:** echte verzending vereist Resend, een geverifieerd afzenderdomein en een cron-secret. Preview en idempotentielogica werken zonder credentials.
 - **Winkellocaties:** de MVP gebruikt Nederlandse demo-filialen en Haversine-filtering; ontbrekende coördinaten worden defensief genegeerd.
 - **Externe prijsdekking:** de interface communiceert expliciet dat uitkomsten schattingen op basis van beschikbare data zijn.

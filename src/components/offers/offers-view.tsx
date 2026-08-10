@@ -3,41 +3,42 @@
 import { useMemo, useState } from "react";
 import { BadgePercent, CalendarRange, CircleAlert, CreditCard, Search, SlidersHorizontal } from "lucide-react";
 import { PageHeading } from "@/components/app/page-heading";
+import { DataAttribution } from "@/components/app/data-attribution";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { demoChains, demoOffers, demoShoppingOptions } from "@/data/demo";
 import { actionLabels } from "@/domain/pricing";
 import { formatEuro } from "@/config/site";
 
 export function OffersView() {
-  const { products, list, profile } = useAppState();
+  const { products, list, profile, chains, offers: allOffers, shoppingOptions, dataSource, dataUpdatedAt, dataWarnings } = useAppState();
   const [query, setQuery] = useState("");
   const [chain, setChain] = useState("all");
   const [dealsOnly, setDealsOnly] = useState(false);
   const listIds = list.map((item) => item.productId);
-  const offers = useMemo(() => demoOffers.filter((offer) => {
-    const option = demoShoppingOptions.find((item) => item.id === offer.id);
+  const offers = useMemo(() => allOffers.filter((offer) => {
+    const option = shoppingOptions.find((item) => item.id === offer.id || item.id.startsWith(`${offer.id}:`));
     const onList = option && listIds.includes(option.productId);
     const allowed = profile.enabledChainIds.includes(offer.chainId);
     const matchesQuery = `${offer.product.name} ${offer.product.brand ?? ""}`.toLocaleLowerCase("nl-NL").includes(query.toLocaleLowerCase("nl-NL"));
     return onList && allowed && matchesQuery && (chain === "all" || offer.chainId === chain) && (!dealsOnly || offer.actionType !== "none");
-  }), [chain, dealsOnly, listIds, profile.enabledChainIds, query]);
+  }), [allOffers, chain, dealsOnly, listIds, profile.enabledChainIds, query, shoppingOptions]);
 
   return (
     <>
       <PageHeading eyebrow="Prijsvergelijking" title="Aanbiedingen & prijzen" description="Normale prijzen en acties voor producten op jouw lijst. We tonen altijd de effectieve stukprijs." />
       <div className="mb-5 flex flex-col gap-3 sm:flex-row">
-        <label className="relative flex-1"><Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input className="input-field pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Zoek in jouw aanbiedingen" /></label>
-        <label className="relative sm:w-52"><select className="input-field appearance-none pr-9" value={chain} onChange={(event) => setChain(event.target.value)}><option value="all">Alle supermarkten</option>{demoChains.filter((item) => profile.enabledChainIds.includes(item.id)).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><SlidersHorizontal className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /></label>
+        <label className="relative flex-1"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input className="input-field input-field-with-icon" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Zoek in jouw aanbiedingen" /></label>
+        <label className="relative sm:w-52"><select className="input-field appearance-none pr-9" value={chain} onChange={(event) => setChain(event.target.value)}><option value="all">Alle supermarkten</option>{chains.filter((item) => profile.enabledChainIds.includes(item.id)).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><SlidersHorizontal className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /></label>
         <button onClick={() => setDealsOnly(!dealsOnly)} className={`min-h-12 rounded-xl border px-4 text-sm font-bold ${dealsOnly ? "border-mandwijs-deep bg-mandwijs-deep text-white" : "border-mandwijs-line bg-white text-mandwijs-muted"}`}><BadgePercent className="mr-2 inline size-4" />Alleen acties</button>
       </div>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#f0d9b9] bg-[#fff8ed] px-4 py-3 text-xs text-[#87531c]"><span className="flex items-center gap-2"><CircleAlert className="size-4 shrink-0" />Demo-prijzen — geen actuele winkelclaim</span><span className="flex items-center gap-1.5 font-bold"><CalendarRange className="size-4" /> Geldig 10–16 augustus</span></div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#f0d9b9] bg-[#fff8ed] px-4 py-3 text-xs text-[#87531c]"><span className="flex flex-wrap items-center gap-2"><CircleAlert className="size-4 shrink-0" />{dataSource === "live" ? "Live providerdata; niet-EAN-matches zijn indicatief" : dataWarnings[0] ?? "Demo-prijzen — geen actuele winkelclaim"}<DataAttribution source={dataSource} /></span><span className="flex items-center gap-1.5 font-bold"><CalendarRange className="size-4" /> Bijgewerkt {new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(dataUpdatedAt))}</span></div>
 
       {offers.length === 0 ? <Card className="grid place-items-center px-5 py-16 text-center shadow-none"><Search className="size-8 text-mandwijs-muted" /><h2 className="mt-3 font-black">Geen resultaten</h2><p className="mt-1 text-sm text-mandwijs-muted">Pas je filters of zoekterm aan.</p></Card> : <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {offers.map((offer) => {
-          const chainInfo = demoChains.find((item) => item.id === offer.chainId)!;
-          const option = demoShoppingOptions.find((item) => item.id === offer.id)!;
+          const chainInfo = chains.find((item) => item.id === offer.chainId);
+          const option = shoppingOptions.find((item) => item.id === offer.id || item.id.startsWith(`${offer.id}:`));
+          if (!chainInfo || !option) return null;
           const ownProduct = products.find((item) => item.id === option.productId);
           const isDeal = offer.actionType !== "none";
           return <Card key={offer.id} className="overflow-hidden shadow-none">

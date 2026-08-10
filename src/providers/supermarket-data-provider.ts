@@ -6,6 +6,13 @@ export interface ProviderSyncResult {
   imported: number;
   failed: number;
   completedAt: string;
+  source: "live" | "demo";
+  warnings: string[];
+}
+
+export interface ProviderSyncOptions {
+  queries?: string[];
+  currentOnly?: boolean;
 }
 
 export interface SupermarketDataProvider {
@@ -13,5 +20,5 @@ export interface SupermarketDataProvider {
   isConfigured(): boolean;
   getChains(): Promise<SupermarketChain[]>;
   getStores(): Promise<StoreLocation[]>;
-  syncOffers(): Promise<ProviderSyncResult>;
+  syncOffers(options?: ProviderSyncOptions): Promise<ProviderSyncResult>;
 }

@@ -16,22 +16,24 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { PageHeading } from "@/components/app/page-heading";
+import { DataAttribution } from "@/components/app/data-attribution";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { demoChains, demoOffers, demoShoppingOptions, demoStores } from "@/data/demo";
 import { optimizeShopping, type Strategy } from "@/domain/optimizer";
 import { actionLabels } from "@/domain/pricing";
+import { localizeShoppingOptions } from "@/domain/market-data";
 import { formatEuro } from "@/config/site";
 
 const strategies: Strategy[] = ["cheapest", "max_two", "fewest", "balance"];
 
 export function DashboardView() {
-  const { products, list, profile } = useAppState();
+  const { products, list, profile, chains, stores, offers, shoppingOptions, dataSource, dataUpdatedAt, dataWarnings } = useAppState();
   const activeItems = list.filter((item) => !item.checked && products.some((product) => product.id === item.productId));
   const productIds = activeItems.map((item) => item.productId);
-  const allowedOptions = demoShoppingOptions
+  const hasPreciseLocation = profile.latitude != null && profile.longitude != null;
+  const allowedOptions = localizeShoppingOptions(shoppingOptions, stores, profile)
     .filter((option) => productIds.includes(option.productId))
     .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
     .map((option) => {
@@ -42,7 +44,7 @@ export function DashboardView() {
   const plans = strategies.map((strategy) => optimizeShopping({ productIds, options: allowedOptions, strategy, storePenaltyCents: 300 }));
   const balance = plans.find((plan) => plan.id === "balance")!;
   const relevantStores = new Set(allowedOptions.map((option) => option.storeId)).size;
-  const activeDeals = demoOffers.filter((offer) => offer.actionType !== "none" && allowedOptions.some((option) => option.id === offer.id));
+  const activeDeals = offers.filter((offer) => offer.actionType !== "none" && allowedOptions.some((option) => option.id === offer.id || option.id.startsWith(`${offer.id}:`)));
 
   return (
     <>
@@ -57,7 +59,7 @@ export function DashboardView() {
         {[
           { icon: ListPlus, label: "Op je lijst", value: `${activeItems.length} producten`, detail: `${list.filter((item) => item.checked).length} afgevinkt` },
           { icon: TrendingDown, label: "Laagste schatting", value: formatEuro(plans[0]?.totalCents ?? 0), detail: `tot ${formatEuro(plans[0]?.savingsCents ?? 0)} verschil` },
-          { icon: Store, label: "Relevante winkels", value: `${relevantStores} in beeld`, detail: `binnen ${profile.radiusKm} km` },
+          { icon: Store, label: hasPreciseLocation ? "Winkels in je buurt" : "Prijsdekking", value: `${relevantStores} in beeld`, detail: hasPreciseLocation ? `binnen ${profile.radiusKm} km` : "landelijke ketenprijzen" },
           { icon: MailCheck, label: "Maandagmail", value: profile.emailPreference === "none" ? "Uitgeschakeld" : "Ingeschakeld", detail: profile.emailPreference === "full" ? "volledige lijst" : "korte samenvatting" },
         ].map(({ icon: Icon, label, value, detail }) => (
           <Card key={label} className="flex items-start gap-4 p-5 shadow-none">
@@ -82,8 +84,9 @@ export function DashboardView() {
           <div className="grid content-center gap-3">
             {[...new Set(balance.options.map((option) => option.storeId))].map((storeId, index) => {
               const options = balance.options.filter((option) => option.storeId === storeId);
-              const store = demoStores.find((item) => item.id === storeId)!;
-              const chain = demoChains.find((item) => item.id === store.chainId)!;
+              const store = stores.find((item) => item.id === storeId);
+              const chain = chains.find((item) => item.id === store?.chainId);
+              if (!store || !chain) return null;
               return (
                 <Link href="/boodschappenlijst" key={storeId} className="flex items-center gap-3 rounded-2xl bg-white/8 p-3.5 transition hover:bg-white/12">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/20 text-xs font-black">{index + 1}</span>
@@ -121,7 +124,8 @@ export function DashboardView() {
           <div className="flex items-center justify-between"><div><h2 className="text-lg font-black">Nu voordelig</h2><p className="mt-1 text-xs text-mandwijs-muted">Aanbiedingen voor producten op jouw lijst</p></div><ButtonLink href="/aanbiedingen" variant="ghost" className="px-2">Alles <ArrowRight className="size-4" /></ButtonLink></div>
           <div className="mt-4 divide-y divide-mandwijs-line">
             {activeDeals.slice(0, 4).map((offer) => {
-              const chain = demoChains.find((item) => item.id === offer.chainId)!;
+              const chain = chains.find((item) => item.id === offer.chainId);
+              if (!chain) return null;
               return <Link href="/aanbiedingen" key={offer.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span>
                 <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{offer.product.name}</strong><span className="mt-0.5 block text-xs text-mandwijs-muted">{chain.name} · {actionLabels[offer.actionType]}</span></span>
@@ -135,9 +139,10 @@ export function DashboardView() {
         <Card className="p-5 shadow-none sm:p-6">
           <h2 className="text-lg font-black">Datastatus</h2>
           <div className="mt-5 space-y-4">
-            <div className="flex gap-3"><Clock3 className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Bijgewerkt vandaag om 08:15</strong><span className="text-xs text-mandwijs-muted">18 demo-aanbiedingen verwerkt</span></span></div>
-            <div className="flex gap-3"><CalendarDays className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Geldig t/m zondag 16 augustus</strong><span className="text-xs text-mandwijs-muted">Volgende automatische controle: morgen</span></span></div>
-            <div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-[#b9691e]" /><span><strong className="block text-sm">Demo-provider actief</strong><span className="text-xs leading-5 text-mandwijs-muted">Prijzen zijn voorbeelddata en geen actuele winkelclaim.</span></span></div>
+            <div className="flex gap-3"><Clock3 className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Bijgewerkt {new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" }).format(new Date(dataUpdatedAt))}</strong><span className="text-xs text-mandwijs-muted">{offers.length} prijzen verwerkt</span></span></div>
+            <div className="flex gap-3"><CalendarDays className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Alleen huidige acties in berekening</strong><span className="text-xs text-mandwijs-muted">Aankomende en historische prijzen tellen niet mee</span></span></div>
+            <div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-[#b9691e]" /><span><strong className="block text-sm">{dataSource === "live" ? "PrijsProfeet live" : "Demo-fallback actief"}</strong><span className="text-xs leading-5 text-mandwijs-muted">{dataWarnings[0] ?? (dataSource === "live" ? "Actuele providerdata; controleer altijd de winkel." : "Geen actuele winkelclaim.")}</span></span></div>
+            <DataAttribution source={dataSource} className="inline-block text-xs text-mandwijs-deep" />
           </div>
         </Card>
       </div>

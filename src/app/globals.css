@@ -107,6 +107,10 @@ a {
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.input-field-with-icon {
+  padding-inline-start: 2.75rem;
+}
+
 .input-field::placeholder {
   color: #8b9692;
 }

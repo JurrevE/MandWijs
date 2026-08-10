@@ -56,7 +56,7 @@ function NavLink({ item, mobile = false }: { item: (typeof navigation)[number]; 
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { profile, list } = useAppState();
+  const { profile, list, mode, dataSource, userEmail, databaseReady, persistenceError } = useAppState();
   return (
     <div className="min-h-screen bg-[#f7faf8] lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-screen border-r border-mandwijs-line bg-white px-4 py-5 lg:flex lg:flex-col">
@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mt-auto">
           <div className="mb-3 rounded-2xl bg-mandwijs-deep p-4 text-white">
             <CircleHelp className="size-5 text-mandwijs-accent" />
-            <p className="mt-3 text-xs font-bold">Demo-data actief</p>
-            <p className="mt-1 text-[.7rem] leading-5 text-white/60">Koppel Supabase en een provider voor live data.</p>
+            <p className="mt-3 text-xs font-bold">{dataSource === "live" ? "PrijsProfeet live" : "Demo-fallback actief"}</p>
+            <p className="mt-1 text-[.7rem] leading-5 text-white/60">{persistenceError ?? (mode === "supabase" ? (databaseReady ? "Accountgegevens worden veilig opgeslagen." : "Voer de Supabase-migratie nog uit.") : "Je gebruikt een lokale demosessie.")}</p>
           </div>
           <form action={logoutAction}>
             <button className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-mandwijs-muted hover:bg-[#f0f5f3] hover:text-mandwijs-text">
@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-[#f1f5f3]" aria-label="Accountmenu">
             <span className="grid size-9 place-items-center rounded-xl bg-mandwijs-secondary text-sm font-black text-mandwijs-deep">{profile.name.slice(0, 1).toUpperCase()}</span>
-            <span className="hidden text-left sm:block"><strong className="block text-xs">{profile.name}</strong><span className="block text-[.65rem] text-mandwijs-muted">Demo-account</span></span>
+            <span className="hidden text-left sm:block"><strong className="block text-xs">{profile.name}</strong><span className="block max-w-40 truncate text-[.65rem] text-mandwijs-muted">{mode === "supabase" ? (userEmail || "Supabase-account") : "Demo-account"}</span></span>
             <ChevronDown className="hidden size-4 text-mandwijs-muted sm:block" />
           </button>
         </header>

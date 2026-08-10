@@ -23,6 +23,8 @@ export class DemoDataProvider implements SupermarketDataProvider {
       imported: demoOffers.length,
       failed: 0,
       completedAt: new Date().toISOString(),
+      source: "demo" as const,
+      warnings: ["Demo-data actief; dit zijn geen actuele winkelprijzen."],
     };
   }
 }

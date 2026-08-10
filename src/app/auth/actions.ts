@@ -125,21 +125,6 @@ export async function updatePasswordAction(formData: FormData) {
   redirect(messageUrl("/login", "message", "Je wachtwoord is gewijzigd. Je kunt nu inloggen."));
 }
 
-export async function googleLoginAction() {
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    await setDemoSession("demo@mandwijs.app");
-    redirect("/dashboard");
-  }
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: authCallbackUrl("/onboarding") },
-  });
-  if (error || !data.url) redirect(messageUrl("/login", "error", "Google-inloggen kon niet worden gestart."));
-  await clearDemoSession();
-  redirect(data.url);
-}
-
 export async function logoutAction() {
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();

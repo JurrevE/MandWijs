@@ -111,6 +111,10 @@ a {
   padding-inline-start: 2.75rem;
 }
 
+.input-field-with-action {
+  padding-inline-end: 3rem;
+}
+
 .input-field::placeholder {
   color: #8b9692;
 }

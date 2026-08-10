@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, Mail, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
+import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { LoginForm } from "@/components/auth/login-form";
-import { googleLoginAction, loginAction, requestPasswordResetAction, signupAction } from "@/app/auth/actions";
+import { PasswordField } from "@/components/auth/password-field";
+import { loginAction, requestPasswordResetAction, signupAction } from "@/app/auth/actions";
 
 type Mode = "login" | "register" | "forgot";
 
@@ -36,7 +38,7 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
             )}
             <label className="block text-sm font-bold">E-mailadres<span className="relative mt-2 block"><Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="email" type="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" enterKeyHint={mode === "forgot" ? "send" : "next"} className="input-field input-field-with-icon" placeholder="jij@voorbeeld.nl" /></span></label>
             {mode !== "forgot" && (
-              <label className="block text-sm font-bold">Wachtwoord<span className="relative mt-2 block"><LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mandwijs-muted" /><input required name="password" type="password" minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="input-field input-field-with-icon" placeholder="Minimaal 8 tekens" /></span></label>
+              <PasswordField autoComplete="new-password" />
             )}
             <AuthSubmitButton label={copy.submit} pendingLabel={pendingLabel} />
           </form>}
@@ -44,7 +46,7 @@ export function AuthCard({ mode, error, message }: { mode: Mode; error?: string;
           {mode !== "forgot" && (
             <>
               <div className="my-6 flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-mandwijs-muted before:h-px before:flex-1 before:bg-mandwijs-line after:h-px after:flex-1 after:bg-mandwijs-line">of</div>
-              <form action={googleLoginAction}><AuthSubmitButton label="Doorgaan met Google" pendingLabel="Google openen..." kind="google" /></form>
+              <GoogleLoginButton />
             </>
           )}
           <p className="mt-7 text-center text-sm text-mandwijs-muted">

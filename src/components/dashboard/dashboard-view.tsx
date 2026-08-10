@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PageHeading } from "@/components/app/page-heading";
 import { DataAttribution } from "@/components/app/data-attribution";
+import { LocationAttribution } from "@/components/app/location-attribution";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -29,11 +30,11 @@ import { formatEuro } from "@/config/site";
 const strategies: Strategy[] = ["cheapest", "max_two", "fewest", "balance"];
 
 export function DashboardView() {
-  const { products, list, profile, chains, stores, offers, shoppingOptions, dataSource, dataUpdatedAt, dataWarnings } = useAppState();
+  const { products, list, profile, chains, stores, offers, shoppingOptions, dataSource, dataUpdatedAt, dataWarnings, storeDataSource } = useAppState();
   const activeItems = list.filter((item) => !item.checked && products.some((product) => product.id === item.productId));
   const productIds = activeItems.map((item) => item.productId);
   const hasPreciseLocation = profile.latitude != null && profile.longitude != null;
-  const allowedOptions = localizeShoppingOptions(shoppingOptions, stores, profile)
+  const allowedOptions = localizeShoppingOptions(shoppingOptions, stores, profile, profile.disabledStoreIds)
     .filter((option) => productIds.includes(option.productId))
     .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
     .map((option) => {
@@ -143,6 +144,7 @@ export function DashboardView() {
             <div className="flex gap-3"><CalendarDays className="mt-0.5 size-5 text-mandwijs-primary" /><span><strong className="block text-sm">Alleen huidige acties in berekening</strong><span className="text-xs text-mandwijs-muted">Aankomende en historische prijzen tellen niet mee</span></span></div>
             <div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-[#b9691e]" /><span><strong className="block text-sm">{dataSource === "live" ? "PrijsProfeet live" : "Demo-fallback actief"}</strong><span className="text-xs leading-5 text-mandwijs-muted">{dataWarnings[0] ?? (dataSource === "live" ? "Actuele providerdata; controleer altijd de winkel." : "Geen actuele winkelclaim.")}</span></span></div>
             <DataAttribution source={dataSource} className="inline-block text-xs text-mandwijs-deep" />
+            <LocationAttribution source={storeDataSource} className="inline-block text-xs text-mandwijs-deep" />
           </div>
         </Card>
       </div>

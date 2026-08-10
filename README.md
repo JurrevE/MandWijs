@@ -76,6 +76,10 @@ Prijslogica, matching, Haversine-afstand en optimalisatie zijn pure services. Da
 | `PRICE_PROVIDER` | server | `demo` of `prijsprofeet` |
 | `PRIJSPROFEET_API_KEY` | alleen server | optioneel voor zoeken, vereist voor gedocumenteerde Pro-endpoints |
 | `PRIJSPROFEET_BASE_URL` | alleen server | standaard `https://www.prijsprofeet.nl` |
+| `NOMINATIM_BASE_URL` | alleen server | geocodingendpoint; standaard publieke OSM-instance |
+| `OVERPASS_API_URL` | alleen server | filiaalzoekendpoint; standaard publieke Overpass-instance |
+| `OVERPASS_FALLBACK_API_URL` | alleen server | tweede publieke/beheerde instance bij tijdelijke 429/5xx |
+| `LOCATION_PROVIDER_USER_AGENT` | alleen server | herkenbare appnaam en contact voor OSM-services |
 | `RESEND_API_KEY` | alleen server | echte e-mailverzending |
 | `RESEND_FROM_EMAIL` | alleen server | geverifieerde afzender |
 | `CRON_SECRET` | alleen server | Bearer-auth voor cronroutes |
@@ -88,7 +92,7 @@ Kopieer `.env.example` naar `.env.local`. Commit nooit `.env.local`, service-rol
 
 1. Kopieer de Supabase-project-URL en anon key naar `.env.local`.
 2. Installeer de Supabase CLI en koppel het project: `supabase link --project-ref <ref>`.
-3. Voer `supabase db push` uit. Dit draait zowel de initiële schema-migratie als de backfill voor accounts die al bestonden. Voer daarna desgewenst `supabase db seed` uit. Zonder CLI kun je de SQL-bestanden uit `supabase/migrations` in oplopende volgorde in de Supabase SQL Editor uitvoeren, gevolgd door `supabase/seed.sql`.
+3. Voer `supabase db push` uit. Dit draait alle migraties in oplopende volgorde, inclusief de accountbackfill en de tabel voor voorkeuren van OpenStreetMap-filialen. Voer daarna desgewenst `supabase db seed` uit. Zonder CLI kun je de SQL-bestanden uit `supabase/migrations` in oplopende volgorde in de Supabase SQL Editor uitvoeren, gevolgd door `supabase/seed.sql`.
 4. Voeg in Supabase Auth de lokale en productie redirect-URL's toe:
    - `http://localhost:3000/auth/callback`
    - `https://jouw-domein.nl/auth/callback`
@@ -112,7 +116,15 @@ De publieke zoek- en filterendpoints werken ook zonder key. Een gratis key verho
 
 Op schermen met live prijsdata staat een klikbare bronvermelding naar PrijsProfeet. Bewaar providerdata niet langer dan de door PrijsProfeet toegestane cacheperiode.
 
-PrijsProfeet documenteert geen filiaalendpoint. MandWijs toont daarom landelijke ketenprijzen en gebruikt transparant gemarkeerde interne filialen voor de winkelstrategie. Bij een ontbrekende key, endpointfout of ongeldige response schakelt de provider terug naar demo-data en toont de UI die status.
+PrijsProfeet documenteert geen filiaalendpoint. MandWijs houdt de landelijke ketenprijzen daarom gescheiden van de locatiebron en koppelt een prijs pas aan het dichtstbijzijnde ingeschakelde filiaal van die keten binnen de gekozen straal. Bij een ontbrekende key, endpointfout of ongeldige response schakelt de prijsprovider terug naar demo-data en toont de UI die status.
+
+## Locaties en filialen
+
+Handmatige Nederlandse adressen en postcodes worden na een expliciete gebruikersactie server-side geocodeerd met Nominatim. Filialen worden daarna via Overpass opgehaald met `shop=supermarket`, opnieuw lokaal met Haversine gecontroleerd en beperkt tot de tien door de prijsprovider ondersteunde ketens. Browserlocatie slaat de geocodestap over. De app gebruikt geen adres-autocomplete en voert geen periodieke of systematische locatiezoekopdrachten uit.
+
+De upstream verzoeken worden gevalideerd, hebben timeouts en een herkenbare `User-Agent`. Nominatim-resultaten worden dertig dagen gecachet, filiaalresultaten één dag. Straal 1, 2 en 5 km delen één 5 km-upstreamquery en worden daarna lokaal exact gefilterd. De publieke Nominatim-instance staat maximaal één request per seconde toe voor de hele app; de implementatie serialiseert cachemisses binnen één serverproces. Tijdelijke Overpass 429/5xx-responses worden één keer via een configureerbare tweede instance geprobeerd, nooit parallel; een succesvolle instance krijgt daarna in dat proces voorrang. Bekijk voor productie altijd opnieuw de [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/), de [Overpass capaciteitsrichtlijnen](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html) en de actuele [lijst met publieke instances](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances). Voor grotere of betaalde uitrol moeten de locatie-endpoints naar beheerde of eigen instances wijzen.
+
+Filiaaldata toont op ieder relevant scherm de verplichte [OpenStreetMap-attributie](https://www.openstreetmap.org/copyright). Een landelijke prijs betekent niet dat voorraad in een specifiek filiaal is bevestigd.
 
 ## E-mail en cron
 
@@ -146,18 +158,17 @@ Voor echte verzending:
 
 ## Bekende beperkingen
 
-- PrijsProfeet-zoekdata is live, maar de provider documenteert geen fysieke filialen. Het winkelplan gebruikt alleen bekende filialen die werkelijk binnen de radius vallen; buiten de huidige interne filialendekking worden daarom geen locaties verzonnen.
+- Filialen komen uit OpenStreetMap en kunnen onvolledig of verouderd zijn. MandWijs toont alleen ondersteunde ketens met coördinaten en verzint ontbrekende filialen niet.
 - De concrete responsevelden van `/match/*` zijn niet gedocumenteerd en worden bewust niet als betrouwbare productdata gemapt.
 - De cron bevat de veilige verzendgrens, maar de live optimizerquery moet bij aansluiting op Supabase worden ingevuld.
-- Browserlocatie wordt niet reverse-geocodeerd; een handmatig ingevulde plaats krijgt zonder geocoder geen verzonnen coördinaten.
+- Browserlocatie wordt niet reverse-geocodeerd; het label blijft daarom “Huidige locatie”. Handmatige invoer wordt wel geocodeerd na bevestiging.
 - Er is nog geen voorraadcontrole, reiskostenberekening of routeoptimalisatie.
 - Prijsvergelijking is primair per stuk; genormaliseerde kg/liter/100g-prijzen staan op de roadmap.
 
 ## Wat moet later nog worden gebouwd?
 
 - persistente, periodieke PrijsProfeet-import voor globale prijshistorie en adminrapportage;
-- providerondersteuning voor filialen zodra daar een gedocumenteerd endpoint voor bestaat;
-- server-side geocoding met privacyvriendelijke opslag;
+- een eigen of beheerde Nominatim/Overpass-instance zodra het gebruik boven een bescheiden MVP uitkomt;
 - volledige weekmailquery en ondertekende one-click unsubscribe;
 - handmatige admin-matchcorrectie als persistente mutatie;
 - voorraadindicatie en prijs per kg/liter/100 gram;

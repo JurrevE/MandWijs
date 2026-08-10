@@ -48,6 +48,8 @@ export interface StoreLocation {
   longitude: number | null;
   openingHours?: string;
   active: boolean;
+  source?: "demo" | "supabase" | "openstreetmap";
+  sourceUrl?: string;
 }
 
 export interface ProviderProduct {

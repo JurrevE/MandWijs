@@ -19,5 +19,8 @@ export function createDemoState(userEmail = "demo@mandwijs.app"): PersistedState
     dataSource: "demo",
     dataUpdatedAt: new Date().toISOString(),
     dataWarnings: ["Demo-data actief; dit zijn geen actuele winkelprijzen."],
+    storeDataSource: "seed",
+    storeDataUpdatedAt: new Date().toISOString(),
+    storeWarnings: ["Voorbeeldfilialen actief totdat een locatie is opgehaald."],
   };
 }

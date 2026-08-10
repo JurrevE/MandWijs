@@ -1,18 +1,13 @@
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { syncOffersWithFallback } from "@/providers";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasAppSession } from "@/lib/auth/app-session";
 
 const requestSchema = z.object({
   queries: z.array(z.string().trim().min(1).max(160)).max(25),
 });
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const hasDemoSession = cookieStore.has("mandwijs_demo_session");
-  const supabase = await createSupabaseServerClient();
-  const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-  if (!hasDemoSession && !data.user) {
+  if (!await hasAppSession()) {
     return Response.json({ error: "Niet ingelogd." }, { status: 401 });
   }
 

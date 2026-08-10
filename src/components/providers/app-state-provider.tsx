@@ -30,6 +30,8 @@ interface AppStateValue extends PersistedState {
   toggleStore: (storeId: string) => void;
   resetDemo: () => void;
   refreshMarketData: () => void;
+  refreshNearbyStores: () => void;
+  storesLoading: boolean;
 }
 
 const AppStateContext = createContext<AppStateValue | null>(null);
@@ -42,6 +44,8 @@ export function AppStateProvider({ children, initialState }: { children: React.R
   const stateRef = useRef(state);
   const persistenceQueue = useRef(Promise.resolve());
   const [marketRefresh, setMarketRefresh] = useState(0);
+  const [storeRefresh, setStoreRefresh] = useState(0);
+  const [storesLoading, setStoresLoading] = useState(false);
 
   useEffect(() => {
     if (initialState.mode !== "demo") return;
@@ -185,7 +189,53 @@ export function AppStateProvider({ children, initialState }: { children: React.R
   }, []);
 
   const refreshMarketData = useCallback(() => setMarketRefresh((value) => value + 1), []);
+  const refreshNearbyStores = useCallback(() => setStoreRefresh((value) => value + 1), []);
   const queryKey = useMemo(() => state.products.filter((product) => product.active).map((product) => product.searchTerm).sort().join("\u0000"), [state.products]);
+  const locationKey = `${state.profile.latitude ?? ""}:${state.profile.longitude ?? ""}:${state.profile.radiusKm}`;
+
+  useEffect(() => {
+    const { latitude, longitude, radiusKm } = stateRef.current.profile;
+    if (latitude == null || longitude == null) {
+      setStoresLoading(false);
+      return;
+    }
+    let active = true;
+    setStoresLoading(true);
+    void fetch("/api/locations/stores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ latitude, longitude, radiusKm }),
+    })
+      .then(async (response) => {
+        const body = await response.json() as { error?: string; stores?: PersistedState["stores"]; completedAt?: string };
+        if (!response.ok || !body.stores || !body.completedAt) throw new Error(body.error ?? "Winkels ophalen is mislukt.");
+        return body;
+      })
+      .then((result) => {
+        if (!active) return;
+        updateState((current) => ({
+          ...current,
+          stores: addNationalPriceLocations(current.chains, result.stores!),
+          storeDataSource: "openstreetmap",
+          storeDataUpdatedAt: result.completedAt!,
+          storeWarnings: [],
+        }));
+      })
+      .catch((error) => {
+        if (!active) return;
+        updateState((current) => ({
+          ...current,
+          stores: current.storeDataSource === "openstreetmap"
+            ? current.stores
+            : addNationalPriceLocations(current.chains, []),
+          storeWarnings: [error instanceof Error ? error.message : "Winkels ophalen is mislukt."],
+        }));
+      })
+      .finally(() => {
+        if (active) setStoresLoading(false);
+      });
+    return () => { active = false; };
+  }, [locationKey, storeRefresh, updateState]);
 
   useEffect(() => {
     const queries = queryKey.split("\u0000").filter(Boolean);
@@ -237,7 +287,9 @@ export function AppStateProvider({ children, initialState }: { children: React.R
     toggleStore,
     resetDemo,
     refreshMarketData,
-  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, toggleChain, toggleStore, resetDemo, refreshMarketData]);
+    refreshNearbyStores,
+    storesLoading,
+  }), [state, addProduct, updateProduct, deleteProduct, addToList, updateListItem, removeFromList, clearList, updateProfile, toggleChain, toggleStore, resetDemo, refreshMarketData, refreshNearbyStores, storesLoading]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

@@ -35,5 +35,8 @@ export interface PersistedState {
   dataSource: "demo" | "live";
   dataUpdatedAt: string;
   dataWarnings: string[];
+  storeDataSource: "seed" | "openstreetmap";
+  storeDataUpdatedAt: string;
+  storeWarnings: string[];
   persistenceError?: string;
 }

@@ -163,6 +163,16 @@ export async function persistChainPreferenceAction(chainSlug: string, enabled: b
 
 export async function persistStorePreferenceAction(storeId: string, enabled: boolean): Promise<ActionResult> {
   return run(async () => withUser(async ({ supabase, userId }) => {
+    const externalId = z.string().regex(/^osm:(node|way|relation):[0-9]+$/).safeParse(storeId);
+    if (externalId.success) {
+      const { error } = await supabase.from("user_external_store_preferences").upsert({
+        user_id: userId,
+        external_store_id: externalId.data,
+        enabled,
+      }, { onConflict: "user_id,external_store_id" });
+      if (error) throw error;
+      return;
+    }
     z.uuid().parse(storeId);
     const { error } = await supabase.from("user_store_preferences").upsert({ user_id: userId, store_id: storeId, enabled }, { onConflict: "user_id,store_id" });
     if (error) throw error;

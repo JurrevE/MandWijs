@@ -33,7 +33,19 @@ Publieke zoekendpoints zijn zonder key bruikbaar. Met `PRIJSPROFEET_TIER=free` v
 
 ## Winkels en geografische dekking
 
-De OpenAPI-specificatie bevat retailers maar geen fysiek filiaalendpoint of coördinaten. `getChains()` gebruikt daarom de gedocumenteerde retailerfacetten. `getStores()` gebruikt een interne, expliciet niet-providergebonden set Nederlandse voorbeeldfilialen. Live aanbiedingen zonder filiaal worden als landelijke ketenprijs verwerkt. Afstand en route zijn hierdoor indicatief totdat PrijsProfeet een gedocumenteerd filiaalendpoint aanbiedt.
+De OpenAPI-specificatie bevat retailers maar geen fysiek filiaalendpoint of coördinaten. Winkeldata loopt daarom via een onafhankelijke `OpenStreetMapLocationProvider`:
+
+- Nominatim geocodeert alleen na een expliciete adres-/postcodezoekactie, met `countrycodes=nl`, `limit=1` en zonder autocomplete;
+- Overpass zoekt `shop=supermarket` binnen maximaal 25 kilometer;
+- Zod valideert beide externe responses;
+- alleen ketens die ook door de prijsprovider worden ondersteund worden gemapt;
+- OSM nodes, ways en relations krijgen stabiele externe IDs (`osm:<type>:<id>`);
+- coördinaten worden defensief opnieuw met Haversine tegen de gekozen straal gecontroleerd;
+- duplicaten op keten + adres of keten + afgeronde coördinaten worden verwijderd.
+
+Landelijke ketenprijzen blijven landelijke records. Voor het winkelplan kiest `localizeShoppingOptions()` per keten het dichtstbijzijnde ingeschakelde filiaal binnen de radius. Daardoor wordt dezelfde landelijke prijs niet kunstmatig over ieder filiaal vermenigvuldigd. Als het dichtstbijzijnde filiaal wordt uitgeschakeld, schuift het volgende filiaal van die keten door.
+
+Nominatim-GETs worden dertig dagen server-side gecachet en binnen één proces tot maximaal één cachemiss per seconde geserialiseerd. Overpass-POSTs worden één dag gecachet. Bij een tijdelijke 429 of 5xx wordt sequentieel één configureerbare mirror geprobeerd. De endpoints en herkenbare `User-Agent` zijn via environmentvariabelen verwisselbaar. De publieke instances zijn bedoeld voor een bescheiden MVP; een grotere productie-uitrol vereist beheerde of eigen capaciteit. OSM-attributie wordt op alle schermen met winkeldata getoond.
 
 ## Importregels voor een toekomstige globale sync
 

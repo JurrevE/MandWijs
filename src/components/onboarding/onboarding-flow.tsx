@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, LocateFixed, Mail, MapPin, PackagePlus, Sparkles, Store, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, LoaderCircle, LocateFixed, Mail, MapPin, PackagePlus, Sparkles, Store, UserRound } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import type { EmailPreference } from "@/domain/email";
+import { geocodeLocation } from "@/lib/location/client";
 
 const steps = [
   { label: "Profiel", icon: UserRound },
@@ -24,10 +25,33 @@ export function OnboardingFlow() {
   const [location, setLocation] = useState(profile.locationLabel);
   const [firstProduct, setFirstProduct] = useState("");
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [advancing, setAdvancing] = useState(false);
 
-  const next = () => {
+  const next = async () => {
     if (step === 0) updateProfile({ name: name.trim() || "MandWijs-gebruiker" });
-    if (step === 1) updateProfile({ locationLabel: location.trim() || "Utrecht Centrum" });
+    if (step === 1) {
+      if (!location.trim()) {
+        setLocationMessage("Vul een plaats, postcode of adres in, of gebruik je browserlocatie.");
+        return;
+      }
+      if (!(location === "Huidige locatie" && profile.latitude != null && profile.longitude != null)) {
+        setAdvancing(true);
+        setLocationMessage("Locatie wordt gecontroleerd…");
+        try {
+          const resolved = await geocodeLocation(location);
+          updateProfile({ locationLabel: resolved.label, latitude: resolved.latitude, longitude: resolved.longitude });
+          setLocation(resolved.label);
+          setLocationMessage("Locatie gevonden. We zoeken nu filialen binnen je straal.");
+        } catch (error) {
+          setLocationMessage(error instanceof Error ? error.message : "Locatie zoeken is mislukt.");
+          setAdvancing(false);
+          return;
+        }
+        setAdvancing(false);
+      } else {
+        updateProfile({ locationLabel: "Huidige locatie" });
+      }
+    }
     if (step < steps.length - 1) setStep(step + 1);
   };
 
@@ -44,7 +68,7 @@ export function OnboardingFlow() {
     if (!navigator.geolocation) return setLocationMessage("Gebruik hieronder een plaats of postcode.");
     setLocationMessage("Locatie wordt opgehaald…");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
-      updateProfile({ latitude: coords.latitude, longitude: coords.longitude });
+      updateProfile({ latitude: coords.latitude, longitude: coords.longitude, locationLabel: "Huidige locatie" });
       setLocation("Huidige locatie");
       setLocationMessage("Gevonden. Je kunt hieronder ook een algemenere locatie invullen.");
     }, () => setLocationMessage("Geen probleem. Vul handmatig een plaats, postcode of adres in."), { timeout: 8000 });
@@ -60,13 +84,13 @@ export function OnboardingFlow() {
 
           {step === 0 && <div><span className="grid size-13 place-items-center rounded-2xl bg-[#e4f3ed] text-mandwijs-deep"><Sparkles className="size-6" /></span><h1 className="mt-5 text-3xl font-black tracking-[-.045em]">Welkom bij MandWijs</h1><p className="mt-3 leading-7 text-mandwijs-muted">We stemmen je vergelijking in een paar korte stappen af. Hoe mogen we je noemen?</p><label className="mt-7 block text-sm font-bold">Jouw naam<input autoFocus value={name} onChange={(event) => setName(event.target.value)} className="input-field mt-2" placeholder="Bijvoorbeeld Sanne" /></label></div>}
 
-          {step === 1 && <div><span className="grid size-13 place-items-center rounded-2xl bg-[#e4f3ed] text-mandwijs-deep"><MapPin className="size-6" /></span><h1 className="mt-5 text-3xl font-black tracking-[-.045em]">Waar doe je boodschappen?</h1><p className="mt-3 leading-7 text-mandwijs-muted">Gebruik browserlocatie als je echt op kilometers wilt filteren. Een plaats of postcode bewaren we zonder geocoding alleen als algemeen locatielabel.</p><Button onClick={useLocation} variant="soft" className="mt-6 w-full"><LocateFixed className="size-4" /> Gebruik browserlocatie</Button>{locationMessage && <p className="mt-3 rounded-xl bg-[#f2f6f4] p-3 text-xs text-mandwijs-muted">{locationMessage}</p>}<label className="mt-5 block text-sm font-bold">Plaats, postcode of adres<input value={location} onChange={(event) => setLocation(event.target.value)} className="input-field mt-2" /></label><div className="mt-6"><span className="text-sm font-bold">Zoekradius</span><div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">{siteConfig.radiusOptionsKm.map((radius) => <button key={radius} onClick={() => updateProfile({ radiusKm: radius })} className={`min-h-11 rounded-xl text-xs font-bold ${profile.radiusKm === radius ? "bg-mandwijs-deep text-white" : "border border-mandwijs-line"}`}>{radius} km</button>)}</div></div></div>}
+          {step === 1 && <div><span className="grid size-13 place-items-center rounded-2xl bg-[#e4f3ed] text-mandwijs-deep"><MapPin className="size-6" /></span><h1 className="mt-5 text-3xl font-black tracking-[-.045em]">Waar doe je boodschappen?</h1><p className="mt-3 leading-7 text-mandwijs-muted">Gebruik browserlocatie of zoek een Nederlands adres of postcode. MandWijs zet dit om naar coördinaten en haalt daarna echte filialen binnen je straal op.</p><Button onClick={useLocation} variant="soft" className="mt-6 w-full"><LocateFixed className="size-4" /> Gebruik browserlocatie</Button>{locationMessage && <p className="mt-3 rounded-xl bg-[#f2f6f4] p-3 text-xs text-mandwijs-muted">{locationMessage}</p>}<label className="mt-5 block text-sm font-bold">Plaats, postcode of adres<input value={location} onChange={(event) => setLocation(event.target.value)} className="input-field mt-2" placeholder="Bijvoorbeeld 8913 HA" /></label><p className="mt-2 text-[.68rem] leading-5 text-mandwijs-muted">Handmatige invoer wordt voor deze zoekactie server-side naar OpenStreetMap Nominatim gestuurd.</p><div className="mt-6"><span className="text-sm font-bold">Zoekradius</span><div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">{siteConfig.radiusOptionsKm.map((radius) => <button key={radius} onClick={() => updateProfile({ radiusKm: radius })} className={`min-h-11 rounded-xl text-xs font-bold ${profile.radiusKm === radius ? "bg-mandwijs-deep text-white" : "border border-mandwijs-line"}`}>{radius} km</button>)}</div></div></div>}
 
           {step === 2 && <div><span className="grid size-13 place-items-center rounded-2xl bg-[#e4f3ed] text-mandwijs-deep"><Store className="size-6" /></span><h1 className="mt-5 text-3xl font-black tracking-[-.045em]">Welke winkels passen bij jou?</h1><p className="mt-3 leading-7 text-mandwijs-muted">Schakel ketens uit waar je niet wilt komen. Specifieke filialen beheer je later bij Winkels.</p><div className="mt-6 grid gap-2 sm:grid-cols-2">{chains.map((chain) => { const enabled = profile.enabledChainIds.includes(chain.id); return <button key={chain.id} onClick={() => toggleChain(chain.id)} className={`flex min-h-14 items-center gap-3 rounded-xl border p-3 text-left ${enabled ? "border-mandwijs-primary bg-[#f1f8f5]" : "border-mandwijs-line bg-white opacity-65"}`}><span className="grid size-9 place-items-center rounded-xl text-[.65rem] font-black text-white" style={{ background: chain.color }}>{chain.shortName}</span><span className="flex-1 text-sm font-bold">{chain.name}</span><span className={`grid size-6 place-items-center rounded-lg ${enabled ? "bg-mandwijs-primary text-white" : "border border-[#b8c5c0] text-transparent"}`}><Check className="size-4" /></span></button>; })}</div></div>}
 
           {step === 3 && <div><span className="grid size-13 place-items-center rounded-2xl bg-[#e4f3ed] text-mandwijs-deep"><PackagePlus className="size-6" /></span><h1 className="mt-5 text-3xl font-black tracking-[-.045em]">Maak je eerste vergelijking</h1><p className="mt-3 leading-7 text-mandwijs-muted">Voeg een product toe{mode === "demo" ? ` of ga verder met de ${products.length} voorbeeldproducten uit de demo` : "; dit wordt veilig aan je account gekoppeld"}.</p><label className="mt-6 block text-sm font-bold">Eerste product<input value={firstProduct} onChange={(event) => setFirstProduct(event.target.value)} className="input-field mt-2" placeholder="Bijvoorbeeld kipfilet" /></label><div className="mt-6"><span className="text-sm font-bold">Maandagmail</span><div className="mt-3 grid gap-2">{(["none", "summary", "full"] as EmailPreference[]).map((value) => <button key={value} onClick={() => updateProfile({ emailPreference: value })} className={`flex items-center gap-3 rounded-xl border p-4 text-left ${profile.emailPreference === value ? "border-mandwijs-primary bg-[#f1f8f5]" : "border-mandwijs-line"}`}><Mail className="size-5 text-mandwijs-primary" /><span className="flex-1"><strong className="block text-sm">{value === "none" ? "Geen e-mail" : value === "summary" ? "Korte samenvatting" : "Volledige boodschappenlijst"}</strong><span className="text-xs text-mandwijs-muted">{value === "none" ? "Je kijkt wanneer het jou uitkomt" : value === "summary" ? "Totaal, winkels en beste acties" : "Alle producten, prijzen en winkelvolgorde"}</span></span>{profile.emailPreference === value && <Check className="size-5 text-mandwijs-primary" />}</button>)}</div></div></div>}
 
-          <div className="mt-9 flex items-center justify-between border-t border-mandwijs-line pt-5"><Button variant="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft className="size-4" /> Terug</Button>{step < steps.length - 1 ? <Button onClick={next}>Verder <ArrowRight className="size-4" /></Button> : <Button onClick={finish}>Naar mijn overzicht <ArrowRight className="size-4" /></Button>}</div>
+          <div className="mt-9 flex items-center justify-between border-t border-mandwijs-line pt-5"><Button variant="ghost" disabled={step === 0 || advancing} onClick={() => setStep(step - 1)}><ArrowLeft className="size-4" /> Terug</Button>{step < steps.length - 1 ? <Button disabled={advancing} onClick={next}>{advancing ? <LoaderCircle className="size-4 animate-spin" /> : null} Verder <ArrowRight className="size-4" /></Button> : <Button onClick={finish}>Naar mijn overzicht <ArrowRight className="size-4" /></Button>}</div>
         </section>
       </div>
     </main>

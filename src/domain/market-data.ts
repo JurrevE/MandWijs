@@ -1,5 +1,5 @@
 import { actionLabels } from "./pricing";
-import { isWithinRadius } from "./distance";
+import { haversineDistanceKm, isWithinRadius } from "./distance";
 import { matchProduct } from "./matching";
 import type { AppProfile } from "./app-state";
 import type { Offer, PersonalProduct, ProductMatch, ShoppingOption, StoreLocation, SupermarketChain } from "./types";
@@ -82,21 +82,33 @@ export function localizeShoppingOptions(
   options: ShoppingOption[],
   stores: StoreLocation[],
   profile: Pick<AppProfile, "latitude" | "longitude" | "radiusKm">,
+  disabledStoreIds: string[] = [],
 ) {
   if (profile.latitude == null || profile.longitude == null) return options;
   const origin = { latitude: profile.latitude, longitude: profile.longitude };
   const nearbyStores = stores.filter((store) =>
     !store.id.startsWith("national:") &&
+    !disabledStoreIds.includes(store.id) &&
     store.latitude != null &&
     store.longitude != null &&
     isWithinRadius(origin, store, profile.radiusKm));
+  const nearestStoreByChain = new Map<string, StoreLocation>();
+  for (const store of nearbyStores) {
+    const existing = nearestStoreByChain.get(store.chainId);
+    if (!existing || isCloser(store, existing, origin)) nearestStoreByChain.set(store.chainId, store);
+  }
 
   return options.flatMap((option) => {
     if (!option.storeId.startsWith("national:")) {
       return nearbyStores.some((store) => store.id === option.storeId) ? [option] : [];
     }
-    return nearbyStores
-      .filter((store) => store.chainId === option.chainId)
-      .map((store) => ({ ...option, id: `${option.id}:${store.id}`, storeId: store.id, storeName: store.name }));
+    const store = nearestStoreByChain.get(option.chainId);
+    return store ? [{ ...option, id: `${option.id}:${store.id}`, storeId: store.id, storeName: store.name }] : [];
   });
+}
+
+function isCloser(candidate: StoreLocation, current: StoreLocation, origin: { latitude: number; longitude: number }) {
+  if (candidate.latitude == null || candidate.longitude == null || current.latitude == null || current.longitude == null) return false;
+  return haversineDistanceKm(origin, { latitude: candidate.latitude, longitude: candidate.longitude }) <
+    haversineDistanceKm(origin, { latitude: current.latitude, longitude: current.longitude });
 }

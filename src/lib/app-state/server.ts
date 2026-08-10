@@ -24,7 +24,7 @@ export async function loadInitialAppState(): Promise<PersistedState> {
   const user = authData.user;
   if (!supabase || !user) return createDemoState(demoEmail);
 
-  const [profileResult, productsResult, listResult, chainsResult, storesResult, chainPreferencesResult, storePreferencesResult] = await Promise.all([
+  const [profileResult, productsResult, listResult, chainsResult, storesResult, chainPreferencesResult, storePreferencesResult, externalStorePreferencesResult] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("personal_products").select("*").order("sort_order").order("created_at"),
     supabase.from("shopping_lists").select("*").eq("active", true).maybeSingle(),
@@ -32,6 +32,7 @@ export async function loadInitialAppState(): Promise<PersistedState> {
     supabase.from("stores").select("*").eq("active", true).order("name"),
     supabase.from("user_chain_preferences").select("*"),
     supabase.from("user_store_preferences").select("*"),
+    supabase.from("user_external_store_preferences").select("*"),
   ]);
 
   const databaseReady = !profileResult.error && Boolean(profileResult.data);
@@ -108,7 +109,10 @@ export async function loadInitialAppState(): Promise<PersistedState> {
       emailPreference: profileRow?.email_preference ?? "summary",
       maxStores: profileRow?.max_stores ?? null,
       enabledChainIds: chains.map((chain) => chain.id).filter((id) => !disabledChainIds.has(id)),
-      disabledStoreIds: (storePreferencesResult.data ?? []).filter((row) => !row.enabled).map((row) => row.store_id),
+      disabledStoreIds: [
+        ...(storePreferencesResult.data ?? []).filter((row) => !row.enabled).map((row) => row.store_id),
+        ...(externalStorePreferencesResult.data ?? []).filter((row) => !row.enabled).map((row) => row.external_store_id),
+      ],
       onboardingCompleted: profileRow?.onboarding_completed ?? false,
     },
     chains,
@@ -121,5 +125,11 @@ export async function loadInitialAppState(): Promise<PersistedState> {
     dataSource: "demo",
     dataUpdatedAt: new Date().toISOString(),
     dataWarnings: warnings,
+    storeDataSource: "seed",
+    storeDataUpdatedAt: new Date().toISOString(),
+    storeWarnings: [
+      ...(externalStorePreferencesResult.error ? ["Voer de migratie voor externe winkelvoorkeuren uit."] : []),
+      "Winkels worden na het laden voor jouw locatie ververst.",
+    ],
   };
 }

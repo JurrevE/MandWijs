@@ -108,6 +108,14 @@ export interface StorePreferenceRow {
   updated_at: string;
 }
 
+export interface ExternalStorePreferenceRow {
+  user_id: string;
+  external_store_id: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -119,6 +127,7 @@ export type Database = {
       stores: Table<StoreRow, Partial<StoreRow> & Pick<StoreRow, "chain_id" | "name" | "address" | "postcode" | "city">, Partial<StoreRow>>;
       user_chain_preferences: Table<ChainPreferenceRow, Pick<ChainPreferenceRow, "user_id" | "chain_id" | "enabled">, Partial<ChainPreferenceRow>>;
       user_store_preferences: Table<StorePreferenceRow, Pick<StorePreferenceRow, "user_id" | "store_id" | "enabled">, Partial<StorePreferenceRow>>;
+      user_external_store_preferences: Table<ExternalStorePreferenceRow, Pick<ExternalStorePreferenceRow, "user_id" | "external_store_id" | "enabled">, Partial<ExternalStorePreferenceRow>>;
     };
     Views: Record<string, never>;
     Functions: {

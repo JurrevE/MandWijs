@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, CheckCircle2, CircleAlert, Minus, Plus, RotateCcw, ShoppingBasket, Store, Trash2, X } from "lucide-react";
 import { PageHeading } from "@/components/app/page-heading";
 import { DataAttribution } from "@/components/app/data-attribution";
+import { LocationAttribution } from "@/components/app/location-attribution";
 import { useAppState } from "@/components/providers/app-state-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -20,12 +21,12 @@ const strategyLabels: Record<Strategy, string> = {
 };
 
 export function ShoppingListView() {
-  const { products, list, profile, chains, stores, shoppingOptions, dataSource, updateListItem, removeFromList, clearList } = useAppState();
+  const { products, list, profile, chains, stores, shoppingOptions, dataSource, storeDataSource, updateListItem, removeFromList, clearList } = useAppState();
   const [strategy, setStrategy] = useState<Strategy>("balance");
   const activeItems = list.filter((item) => !item.checked);
   const checkedItems = list.filter((item) => item.checked);
 
-  const adjustedOptions = useMemo(() => localizeShoppingOptions(shoppingOptions, stores, profile)
+  const adjustedOptions = useMemo(() => localizeShoppingOptions(shoppingOptions, stores, profile, profile.disabledStoreIds)
     .filter((option) => activeItems.some((item) => item.productId === option.productId))
     .filter((option) => profile.enabledChainIds.includes(option.chainId) && !profile.disabledStoreIds.includes(option.storeId))
     .map((option) => {
@@ -101,7 +102,7 @@ export function ShoppingListView() {
 
         <aside className="space-y-4">
           <Card className="p-5 shadow-none"><h2 className="text-sm font-black">Hoeveelheden</h2><div className="mt-4 space-y-4">{activeItems.map((item) => { const product = products.find((entry) => entry.id === item.productId); return <div key={item.productId}><div className="mb-2 flex items-center justify-between gap-3"><span className="truncate text-xs font-bold">{product?.name}</span><button onClick={() => removeFromList(item.productId)} className="text-mandwijs-muted hover:text-[#a53b43]" aria-label="Verwijderen"><Trash2 className="size-3.5" /></button></div><div className="flex items-center rounded-xl border border-mandwijs-line bg-white"><button onClick={() => updateListItem(item.productId, { quantity: Math.max(1, item.quantity - 1) })} className="grid size-10 place-items-center" aria-label="Minder"><Minus className="size-4" /></button><span className="flex-1 text-center text-sm font-black">{item.quantity}</span><button onClick={() => updateListItem(item.productId, { quantity: item.quantity + 1 })} className="grid size-10 place-items-center" aria-label="Meer"><Plus className="size-4" /></button></div></div>; })}</div><ButtonLink href="/producten" variant="soft" className="mt-5 w-full"><Plus className="size-4" /> Product toevoegen</ButtonLink></Card>
-          <Card className="p-5 shadow-none"><h2 className="flex items-center gap-2 text-sm font-black"><Store className="size-4 text-mandwijs-primary" />Prijsuitleg</h2><p className="mt-3 text-xs leading-5 text-mandwijs-muted">Het totaal bevat verplichte actie-aantallen. De balansscore telt € 3,00 per extra winkel op om gemak mee te wegen; dat bedrag betaal je niet echt.</p><DataAttribution source={dataSource} className="mt-3 inline-block text-xs text-mandwijs-deep" /></Card>
+          <Card className="p-5 shadow-none"><h2 className="flex items-center gap-2 text-sm font-black"><Store className="size-4 text-mandwijs-primary" />Prijsuitleg</h2><p className="mt-3 text-xs leading-5 text-mandwijs-muted">Het totaal bevat verplichte actie-aantallen. De balansscore telt € 3,00 per extra winkel op om gemak mee te wegen; dat bedrag betaal je niet echt.</p><DataAttribution source={dataSource} className="mt-3 block text-xs text-mandwijs-deep" /><LocationAttribution source={storeDataSource} className="mt-2 block text-xs text-mandwijs-deep" /></Card>
         </aside>
       </div>
     </>

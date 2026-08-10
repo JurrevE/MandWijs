@@ -79,4 +79,15 @@ describe("buildShoppingOptions", () => {
 
     expect(localized.map((option) => option.storeId)).toEqual(["near"]);
   });
+
+  it("kiest per keten het dichtstbijzijnde ingeschakelde filiaal", () => {
+    const stores: StoreLocation[] = [
+      { id: "nearest", chainId: "jumbo", name: "Jumbo één", address: "Een 1", postcode: "3511 AA", city: "Utrecht", latitude: 52.091, longitude: 5.122, active: true },
+      { id: "second", chainId: "jumbo", name: "Jumbo twee", address: "Twee 2", postcode: "3521 AA", city: "Utrecht", latitude: 52.1, longitude: 5.13, active: true },
+    ];
+    const national = buildShoppingOptions([product], [offer], [chain]);
+
+    expect(localizeShoppingOptions(national, stores, { latitude: 52.0907, longitude: 5.1214, radiusKm: 5 })[0].storeId).toBe("nearest");
+    expect(localizeShoppingOptions(national, stores, { latitude: 52.0907, longitude: 5.1214, radiusKm: 5 }, ["nearest"])[0].storeId).toBe("second");
+  });
 });

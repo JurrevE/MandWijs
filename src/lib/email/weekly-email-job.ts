@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addNationalPriceLocations } from "@/domain/market-data";
 import { currentWeekRange, isoWeek, shouldSendWeeklyEmail, weeklyEmailKey, type EmailPreference } from "@/domain/email";
 import { buildWeeklyPlan } from "@/domain/weekly-plan";
+import { isOfferCurrentOnDate } from "@/domain/offer-validity";
 import { renderWeeklyEmail } from "@/emails/weekly-email";
 import type { AppProfile, GroceryListItem } from "@/domain/app-state";
 import type { Offer, PersonalProduct, SupermarketChain } from "@/domain/types";
@@ -107,17 +108,20 @@ async function loadWeeklyContext(
   };
 }
 
-async function syncLiveOffers(provider: SupermarketDataProvider, queries: string[]) {
+async function syncLiveOffers(provider: SupermarketDataProvider, queries: string[], asOf: Date) {
   if (!provider.isConfigured() || provider.name === "demo") throw new Error("Een live prijsprovider is vereist voor de maandagmail.");
   const offers = new Map<string, Offer>();
   const warnings: string[] = [];
   for (const queryChunk of chunk(queries, 25)) {
-    const result = await provider.syncOffers({ queries: queryChunk, currentOnly: true });
+    const result = await provider.syncOffers({ queries: queryChunk, currentOnly: true, asOf });
     if (result.source !== "live") throw new Error("De prijsprovider schakelde terug naar demo-data; er wordt niets verzonden.");
     result.offers.forEach((offer) => offers.set(offer.id, offer));
     warnings.push(...result.warnings);
   }
-  return { offers: [...offers.values()], warnings: [...new Set(warnings)] };
+  return {
+    offers: [...offers.values()].filter((offer) => isOfferCurrentOnDate(offer, asOf)),
+    warnings: [...new Set(warnings)],
+  };
 }
 
 export async function runWeeklyEmailJob(options: WeeklyEmailJobOptions) {
@@ -177,7 +181,7 @@ export async function runWeeklyEmailJob(options: WeeklyEmailJobOptions) {
     const itemProductIds = new Set(context.items.map((item) => item.productId));
     return context.products.filter((product) => itemProductIds.has(product.id)).map((product) => product.searchTerm.trim());
   }).filter(Boolean))];
-  const marketData = queries.length ? await syncLiveOffers(options.provider, queries) : { offers: [], warnings: [] };
+  const marketData = queries.length ? await syncLiveOffers(options.provider, queries, now) : { offers: [], warnings: [] };
 
   for (const context of contexts) {
     try {

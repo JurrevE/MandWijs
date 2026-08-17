@@ -13,6 +13,7 @@ export interface ProviderSyncResult {
 export interface ProviderSyncOptions {
   queries?: string[];
   currentOnly?: boolean;
+  asOf?: Date;
 }
 
 export interface SupermarketDataProvider {

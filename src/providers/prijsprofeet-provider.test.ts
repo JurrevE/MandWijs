@@ -100,7 +100,7 @@ describe("PrijsProfeetProvider", () => {
       apiKey: "server-secret",
       fetchImpl,
     });
-    const result = await provider.syncOffers({ queries: ["melk"], currentOnly: true });
+    const result = await provider.syncOffers({ queries: ["melk"], currentOnly: true, asOf: new Date("2026-08-10T07:00:00.000Z") });
 
     expect(result.source).toBe("live");
     expect(result.offers).toHaveLength(2);
@@ -165,11 +165,48 @@ describe("PrijsProfeetProvider", () => {
     });
     const provider = new PrijsProfeetProvider({ baseUrl: "https://www.prijsprofeet.nl", fetchImpl });
 
-    const result = await provider.syncOffers({ queries: ["Biotex Voorwas blauw"], currentOnly: true });
+    const result = await provider.syncOffers({ queries: ["Biotex Voorwas blauw"], currentOnly: true, asOf: new Date("2026-08-10T07:00:00.000Z") });
 
     expect(result.offers.map((offer) => offer.chainId)).toEqual(expect.arrayContaining(["dekamarkt", "albert-heijn"]));
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(fetchImpl.mock.calls.some(([input]) => String(input).includes("q=Biotex&"))).toBe(true);
+  });
+
+  it("weigert een verlopen actie ook wanneer PrijsProfeet de status nog actief noemt", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      if (url.includes("/api/v1/products/search/")) {
+        return jsonResponse({ total: 0, page: 1, page_size: 100, products: [] });
+      }
+      return jsonResponse({
+        total: 1,
+        page: 1,
+        page_size: 100,
+        query: "melk",
+        results: [{
+          product_id: "expired-active-melk",
+          name: "Melk actie vorige week",
+          price: 0.99,
+          original_price: 1.49,
+          retailer: "albert_heijn",
+          is_promotional: true,
+          promotion_status: "active",
+          promotion_type: "percentage",
+          valid_from: "2026-08-10",
+          valid_until: "2026-08-16",
+          score: 10,
+        }],
+      });
+    });
+    const provider = new PrijsProfeetProvider({ baseUrl: "https://www.prijsprofeet.nl", fetchImpl });
+
+    const result = await provider.syncOffers({
+      queries: ["melk"],
+      currentOnly: true,
+      asOf: new Date("2026-08-17T07:00:00.000Z"),
+    });
+
+    expect(result.offers).toHaveLength(0);
   });
 
   it("stuurt current_only naar EAN-matching en valt zonder Pro-key veilig terug", async () => {

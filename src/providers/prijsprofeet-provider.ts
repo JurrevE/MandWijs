@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calculateEffectivePricing } from "@/domain/pricing";
+import { calendarDateInTimeZone, isDateWithinOfferWindow } from "@/domain/offer-validity";
 import type { Offer, OfferActionType, ProductUnit, SupermarketChain } from "@/domain/types";
 import { DemoDataProvider } from "./demo-data-provider";
 import type {
@@ -195,7 +196,7 @@ interface OfferFields {
   privateLabel?: boolean;
 }
 
-function mapOffer(fields: OfferFields, currentOnly: boolean): Offer | null {
+function mapOffer(fields: OfferFields, currentOnly: boolean, asOfDate: string): Offer | null {
   if (fields.isPromotional && currentOnly && fields.promotionStatus !== "active") return null;
   if (fields.isPromotional && fields.promotionStatus && !["active", "upcoming"].includes(fields.promotionStatus)) return null;
 
@@ -203,6 +204,7 @@ function mapOffer(fields: OfferFields, currentOnly: boolean): Offer | null {
   const validFrom = isoDate(fields.validFrom) ?? extractedDate;
   const validUntil = isoDate(fields.validUntil) ?? validFrom;
   if (!validFrom || !validUntil || validUntil < validFrom) return null;
+  if (fields.isPromotional && currentOnly && !isDateWithinOfferWindow(asOfDate, validFrom, validUntil)) return null;
 
   const actionType = toActionType(fields.isPromotional, fields.promotionType);
   const regularPriceCents = euroToCents(fields.originalPrice ?? fields.price);
@@ -251,7 +253,7 @@ function mapOffer(fields: OfferFields, currentOnly: boolean): Offer | null {
   };
 }
 
-const mapSearchProduct = (product: SearchProduct, currentOnly: boolean) => {
+const mapSearchProduct = (product: SearchProduct, currentOnly: boolean, asOfDate: string) => {
   const name = product.name ?? product.title;
   if (!name || product.price == null) return null;
   return mapOffer({
@@ -274,10 +276,10 @@ const mapSearchProduct = (product: SearchProduct, currentOnly: boolean) => {
     validFrom: product.valid_from ?? undefined,
     validUntil: product.valid_until ?? undefined,
     productUrl: product.product_url ?? undefined,
-  }, currentOnly);
+  }, currentOnly, asOfDate);
 };
 
-const mapProduct = (product: ProductResponse, currentOnly: boolean) => mapOffer({
+const mapProduct = (product: ProductResponse, currentOnly: boolean, asOfDate: string) => mapOffer({
   productId: product.product_id,
   name: product.name,
   brand: product.brand ?? undefined,
@@ -297,7 +299,7 @@ const mapProduct = (product: ProductResponse, currentOnly: boolean) => mapOffer(
   extractedAt: product.extracted_at,
   productUrl: product.product_url ?? undefined,
   privateLabel: product.private_label ?? undefined,
-}, currentOnly);
+}, currentOnly, asOfDate);
 
 interface PrijsProfeetProviderOptions {
   baseUrl?: string;
@@ -378,6 +380,7 @@ export class PrijsProfeetProvider implements SupermarketDataProvider {
       .map((query) => query.trim())
       .filter(Boolean))].slice(0, 25);
     const currentOnly = options.currentOnly ?? true;
+    const asOfDate = calendarDateInTimeZone(options.asOf ?? new Date());
     const offers = new Map<string, Offer>();
     const verificationCandidateIds = new Set<string>();
     const warnings: string[] = [];
@@ -401,7 +404,7 @@ export class PrijsProfeetProvider implements SupermarketDataProvider {
           const search = await this.request(`/api/v1/search?${searchParams}`, searchResponseSchema);
           successfulRequests += 1;
           for (const product of search.results) {
-            const offer = mapSearchProduct(product, currentOnly);
+            const offer = mapSearchProduct(product, currentOnly, asOfDate);
             if (offer) {
               offers.set(offer.id, offer);
               if (this.apiKey && offer.product.ean) verificationCandidateIds.add(offer.sourceId);
@@ -418,7 +421,7 @@ export class PrijsProfeetProvider implements SupermarketDataProvider {
         const products = await this.request(`/api/v1/products/search/${encoded}?page=1&page_size=100`, productListResponseSchema);
         successfulRequests += 1;
         for (const product of products.products) {
-          const offer = mapProduct(product, currentOnly);
+          const offer = mapProduct(product, currentOnly, asOfDate);
           if (offer && !offers.has(offer.id)) offers.set(offer.id, offer);
           else if (!offer) failed += 1;
         }
@@ -437,7 +440,7 @@ export class PrijsProfeetProvider implements SupermarketDataProvider {
         for (const [offerId, existing] of offers) {
           if (existing.sourceId === productId) offers.delete(offerId);
         }
-        const verified = mapProduct(detail, currentOnly);
+        const verified = mapProduct(detail, currentOnly, asOfDate);
         if (verified) offers.set(verified.id, verified);
         else failed += 1;
       } catch (error) {

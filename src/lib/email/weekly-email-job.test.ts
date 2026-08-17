@@ -106,4 +106,49 @@ describe("runWeeklyEmailJob", () => {
     expect(duplicate).toMatchObject({ sent: 0, skipped: 1 });
     expect(send).toHaveBeenCalledOnce();
   });
+
+  it("neemt verlopen acties niet op in de maandagmail, ook niet als de provider ze terugstuurt", async () => {
+    const userId = "22222222-2222-4222-8222-222222222222";
+    const tables: Record<string, Row[]> = {
+      supermarket_chains: [{ id: "chain-uuid", slug: "albert-heijn", name: "Albert Heijn", short_name: "AH", brand_color: "#169bd5", active: true }],
+      profiles: [{ id: userId, display_name: "Jurre", latitude: 52, longitude: 5, radius_km: 5, max_stores: 2, email_preference: "full", onboarding_completed: true }],
+      personal_products: [{ id: "product-1", user_id: userId, name: "Melk", search_term: "melk", kind: "category", preferred_brand: null, allow_house_brand: true, desired_quantity: 1, unit: "liter", category_label: "Zuivel", active: true, notes: null, expected_ean: null, expected_source_product_id: null, sort_order: 0 }],
+      shopping_lists: [{ id: "list-1", user_id: userId, active: true }],
+      shopping_list_items: [{ id: "item-1", list_id: "list-1", personal_product_id: "product-1", desired_quantity: 1, note: null, checked: false, sort_order: 0 }],
+      user_chain_preferences: [],
+      user_store_preferences: [],
+      user_external_store_preferences: [],
+      weekly_email_deliveries: [],
+    };
+    const fakeClient = {
+      from: (table: string) => new FakeQuery(table, tables),
+      auth: { admin: { getUserById: vi.fn() } },
+    } as unknown as SupabaseClient<Database>;
+    const expiredPromotion: Offer = {
+      ...liveOffer,
+      id: "expired-offer",
+      actionType: "percentage",
+      actionPriceCents: 99,
+      effectiveUnitPriceCents: 99,
+      payableTotalCents: 99,
+    };
+    const syncOffers = vi.fn(async () => ({ provider: "prijsprofeet", offers: [expiredPromotion], imported: 1, failed: 0, completedAt: "2026-08-17T06:00:00.000Z", source: "live" as const, warnings: [] }));
+    const provider: SupermarketDataProvider = {
+      name: "prijsprofeet",
+      isConfigured: () => true,
+      getChains: vi.fn(async () => []),
+      getStores: vi.fn(async () => []),
+      syncOffers,
+    };
+    const locationProvider = {
+      findNearbyStores: vi.fn(async () => ({ stores: [], attribution: "© OpenStreetMap contributors" as const, completedAt: "2026-08-17T06:00:00.000Z" })),
+    };
+    const now = new Date("2026-08-17T07:00:00.000Z");
+
+    const result = await runWeeklyEmailJob({ supabase: fakeClient, provider, locationProvider, appUrl: "https://mandwijs.com", userId, now, dryRun: true });
+
+    expect(syncOffers).toHaveBeenCalledWith(expect.objectContaining({ currentOnly: true, asOf: now }));
+    expect(result).toMatchObject({ previewed: 0, sent: 0, skipped: 1, failed: 0 });
+    expect(result.results[0]).toMatchObject({ status: "skipped", reason: "Geen betrouwbare actuele prijs- en winkelmatches gevonden." });
+  });
 });
